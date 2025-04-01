@@ -78,13 +78,20 @@ if st.button("🔍 Recomendar películas"):
 if st.button("📊 Evaluar todos los modelos"):
     with st.spinner("Evaluando..."):
         eval_df = evaluate_models()
-    st.subheader("Comparación de modelos")
+    st.subheader("📈 Comparación de modelos")
     st.dataframe(eval_df)
 
-    # Gráfico de barras
+    # Gráfico de barras mejorado
     st.subheader("🔬 RMSE por modelo")
-    fig, ax = plt.subplots()
-    ax.bar(eval_df["Model"], eval_df["RMSE"])
-    ax.set_ylabel("RMSE")
-    ax.set_title("Comparación de RMSE entre modelos")
+    fig, ax = plt.subplots(figsize=(10, 6))  # Más ancho
+    bars = ax.bar(eval_df["Model"], eval_df["RMSE"], width=0.5)
+    ax.set_ylabel("RMSE", fontsize=12)
+    ax.set_title("Comparación de RMSE entre modelos", fontsize=14)
+    plt.xticks(rotation=20, ha="right", fontsize=10)
+
+    # Mostrar valores encima de las barras
+    for bar in bars:
+        height = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width() / 2, height + 0.01, f"{height:.3f}", ha='center', fontsize=10)
+
     st.pyplot(fig)

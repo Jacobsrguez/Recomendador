@@ -9,12 +9,37 @@ from surprise import accuracy
 ratings = pd.read_csv("ratings.csv")
 movies = pd.read_csv("movies.csv")
 
-# Configurar surprise
+# INFO DEL DATASET
+st.sidebar.title("📊 Información del Dataset")
+
+# Número de usuarios únicos
+num_users = ratings['userId'].nunique()
+# Número de películas únicas
+num_movies = ratings['movieId'].nunique()
+# Número total de valoraciones
+num_ratings = ratings.shape[0]
+# Número de categorías únicas (extraídas del campo 'genres')
+all_genres = movies['genres'].str.split('|').explode().unique()
+num_genres = len(all_genres)
+
+st.sidebar.markdown(f"👥 **Usuarios únicos:** {num_users}")
+st.sidebar.markdown(f"🎞️ **Películas distintas:** {num_movies}")
+st.sidebar.markdown(f"⭐ **Valoraciones totales:** {num_ratings}")
+st.sidebar.markdown(f"🏷️ **Categorías únicas:** {num_genres}")
+st.sidebar.markdown("📚 **Categorías:**")
+st.sidebar.write(", ".join(sorted(all_genres)))
+
+# Selección de usuario para ver cuántas valoraciones ha hecho
+selected_user_info = st.sidebar.selectbox("🔍 Ver valoraciones de un usuario", sorted(ratings['userId'].unique()))
+user_ratings_count = ratings[ratings['userId'] == selected_user_info].shape[0]
+st.sidebar.markdown(f"📝 **Valoraciones del usuario {selected_user_info}:** {user_ratings_count}")
+
+# Conversion de el dataset para libreria Surprise
 reader = Reader(rating_scale=(0.5, 5.0))
 data = Dataset.load_from_df(ratings[['userId', 'movieId', 'rating']], reader)
 trainset, testset = train_test_split(data, test_size=0.2, random_state=42)
 
-# Modelos disponibles
+
 def get_model(algorithm_name):
     if algorithm_name == "Item-Item (Cosine)":
         return KNNBasic(sim_options={'name': 'cosine', 'user_based': False})
@@ -27,13 +52,13 @@ def get_model(algorithm_name):
     else:
         return KNNBasic()
 
-# Obtener películas no vistas
+# Peliculas que no han sido vistas por un usuario
 def get_unseen_movies(user_id, ratings_df):
     seen_movies = ratings_df[ratings_df.userId == user_id]['movieId'].tolist()
     all_movies = ratings_df['movieId'].unique()
     return [movie for movie in all_movies if movie not in seen_movies]
 
-# Recomendar películas
+# Recomendación de películas
 def recommend_movies(user_id, algo, n=10):
     unseen = get_unseen_movies(user_id, ratings)
     predictions = [algo.predict(user_id, movie_id) for movie_id in unseen]
@@ -59,7 +84,7 @@ def evaluate_models():
     return pd.DataFrame(results)
 
 # STREAMLIT INTERFAZ
-st.title("🎬 Recomendador de Películas con Comparación de Modelos")
+st.title("🎬 Recomendador de Películas")
 
 user_ids = sorted(ratings['userId'].unique())
 selected_user = st.selectbox("👤 Selecciona un usuario", user_ids)
@@ -83,7 +108,7 @@ if st.button("📊 Evaluar todos los modelos"):
 
     # Gráfico de barras mejorado
     st.subheader("🔬 RMSE por modelo")
-    fig, ax = plt.subplots(figsize=(10, 6))  # Más ancho
+    fig, ax = plt.subplots(figsize=(10, 6))
     bars = ax.bar(eval_df["Model"], eval_df["RMSE"], width=0.5)
     ax.set_ylabel("RMSE", fontsize=12)
     ax.set_title("Comparación de RMSE entre modelos", fontsize=14)

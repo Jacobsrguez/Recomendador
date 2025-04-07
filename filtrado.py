@@ -120,3 +120,32 @@ if st.button("📊 Evaluar todos los modelos"):
         ax.text(bar.get_x() + bar.get_width() / 2, height + 0.01, f"{height:.3f}", ha='center', fontsize=10)
 
     st.pyplot(fig)
+
+# Análisis de distribución
+st.markdown("## 📈 Distribución de Valoraciones")
+
+# Histograma de valoraciones por usuario
+st.subheader("👥 Valoraciones por Usuario")
+st.caption("Distribución de valoraciones por usuario (usuarios con < 1000 valoraciones)")
+
+user_rating_counts = ratings.groupby('userId').size()
+filtered_user_ratings = user_rating_counts[user_rating_counts < 1000]
+
+fig, ax = plt.subplots()
+ax.hist(filtered_user_ratings, bins=50, color='skyblue', edgecolor='black')
+ax.set_xlabel("Número de valoraciones")
+ax.set_ylabel("Cantidad de usuarios")
+st.pyplot(fig)
+
+# Histograma de valoraciones por película
+st.subheader("🎞️ Valoraciones por Película")
+st.caption("Distribución de valoraciones por película (películas con < 100 valoraciones)")
+
+movie_rating_counts = ratings.groupby('movieId').size()
+filtered_movie_ratings = movie_rating_counts[movie_rating_counts < 100]
+
+fig, ax = plt.subplots()
+ax.hist(filtered_movie_ratings, bins=50, color='lightgreen', edgecolor='black')
+ax.set_xlabel("Número de valoraciones")
+ax.set_ylabel("Cantidad de películas")
+st.pyplot(fig)

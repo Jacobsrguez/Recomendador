@@ -149,3 +149,14 @@ ax.hist(filtered_movie_ratings, bins=50, color='lightgreen', edgecolor='black')
 ax.set_xlabel("Número de valoraciones")
 ax.set_ylabel("Cantidad de películas")
 st.pyplot(fig)
+
+st.subheader("👑 Top 5 Usuarios Más Activos")
+top_users = ratings['userId'].value_counts().head(5).reset_index()
+top_users.columns = ['Usuario', 'Cantidad de Valoraciones']
+st.table(top_users)
+
+st.subheader("🍿 Top 5 Películas Más Valoradas")
+top_movies = ratings['movieId'].value_counts().head(5).reset_index()
+top_movies.columns = ['movieId', 'Cantidad de Valoraciones']
+top_movies = top_movies.merge(movies, on='movieId')
+st.table(top_movies[['title', 'Cantidad de Valoraciones']])

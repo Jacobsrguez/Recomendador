@@ -44,8 +44,9 @@ user_genres_exploded = user_genres.copy()
 user_genres_exploded['genres'] = user_genres_exploded['genres'].str.split('|')
 user_genres_exploded = user_genres_exploded.explode('genres')
 genre_rating_avg = user_genres_exploded.groupby('genres')['rating'].mean().sort_values(ascending=False)
-st.sidebar.markdown(f"🌟 Géneros favoritos del usuario {selected_user_genres}")
-st.sidebar.table(genre_rating_avg.head(5))
+top_genres = genre_rating_avg.head(5).index.tolist()
+st.sidebar.markdown(f"🌟 **Géneros favoritos del usuario {selected_user_genres}:** {', '.join(top_genres)}")
+
 
 # Conversion de el dataset para libreria Surprise
 reader = Reader(rating_scale=(0.5, 5.0))

@@ -20,14 +20,16 @@ num_movies = ratings['movieId'].nunique()
 num_ratings = ratings.shape[0]
 # Número de categorías únicas (extraídas del campo 'genres')
 all_genres = movies['genres'].str.split('|').explode().unique()
-num_genres = len(all_genres)
+all_genres2 = [genre for genre in all_genres if genre != '(no genres listed)']
+num_genres = len(all_genres2)
 
 st.sidebar.markdown(f"👥 **Usuarios únicos:** {num_users}")
 st.sidebar.markdown(f"🎞️ **Películas distintas:** {num_movies}")
 st.sidebar.markdown(f"⭐ **Valoraciones totales:** {num_ratings}")
 st.sidebar.markdown(f"🏷️ **Categorías únicas:** {num_genres}")
 st.sidebar.markdown("📚 **Categorías:**")
-st.sidebar.write(", ".join(sorted(all_genres)))
+st.sidebar.write(", ".join(sorted(all_genres2)))
+
 
 # Selección de usuario para ver cuántas valoraciones ha hecho
 selected_user_info = st.sidebar.selectbox("🔍 Ver valoraciones de un usuario", sorted(ratings['userId'].unique()))

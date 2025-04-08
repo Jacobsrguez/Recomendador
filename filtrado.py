@@ -36,6 +36,15 @@ selected_user_info = st.sidebar.selectbox("🔍 Ver valoraciones de un usuario",
 user_ratings_count = ratings[ratings['userId'] == selected_user_info].shape[0]
 st.sidebar.markdown(f"📝 **Valoraciones del usuario {selected_user_info}:** {user_ratings_count}")
 
+# Selección de un usuario para ver sus generos favoritos
+selected_user_genres = st.sidebar.selectbox("🔍 Ver géneros favoritos de un usuario", sorted(ratings['userId'].unique()))
+user_movies = ratings[ratings['userId'] == selected_user_genres]
+user_movies = user_movies.merge(movies[['movieId', 'genres']], on='movieId')
+genre_series = user_movies['genres'].str.split('|').explode()
+genre_counts = genre_series.value_counts()
+st.sidebar.markdown(f"🎯 **Géneros favoritos del usuario {selected_user_genres}:**")
+st.sidebar.table(genre_counts.head(5))
+
 # Conversion de el dataset para libreria Surprise
 reader = Reader(rating_scale=(0.5, 5.0))
 data = Dataset.load_from_df(ratings[['userId', 'movieId', 'rating']], reader)

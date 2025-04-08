@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-from surprise import Dataset, Reader, KNNBasic, SVD, BaselineOnly
+from surprise import Dataset, Reader, KNNBasic, SVD, BaselineOnly, SVDpp, NMF, KNNWithMeans, KNNWithZScore, KNNBaseline, NormalPredictor, SlopeOne, CoClustering
 from surprise.model_selection import train_test_split
 from surprise import accuracy
 
@@ -61,10 +61,29 @@ def get_model(algorithm_name):
         return KNNBasic(sim_options={'name': 'cosine', 'user_based': True})
     elif algorithm_name == "SVD":
         return SVD()
+    elif algorithm_name == "SVD++":
+        return SVDpp()
+    elif algorithm_name == "NMF":
+        return NMF()
+    elif algorithm_name == "KNNBasic":
+        return KNNBasic()
+    elif algorithm_name == "KNNWithMeans":
+        return KNNWithMeans()
+    elif algorithm_name == "KNNWithZScore":
+        return KNNWithZScore()
+    elif algorithm_name == "KNNBaseline":
+        return KNNBaseline()
     elif algorithm_name == "BaselineOnly":
         return BaselineOnly()
+    elif algorithm_name == "NormalPredictor":
+        return NormalPredictor()
+    elif algorithm_name == "SlopeOne":
+        return SlopeOne()
+    elif algorithm_name == "CoClustering":
+        return CoClustering()
     else:
         return KNNBasic()
+
 
 # Peliculas que no han sido vistas por un usuario
 def get_unseen_movies(user_id, ratings_df):
@@ -87,8 +106,14 @@ def recommend_movies(user_id, algo, n=10):
 
 # Evaluar todos los modelos
 def evaluate_models():
+    model_names = [
+        "Item-Item (Cosine)", "User-User (Cosine)",
+        "SVD", "SVD++", "NMF",
+        "KNNBasic", "KNNWithMeans", "KNNWithZScore", "KNNBaseline",
+        "BaselineOnly", "NormalPredictor", "SlopeOne", "CoClustering"
+    ]
     results = []
-    for name in ["Item-Item (Cosine)", "User-User (Cosine)", "SVD", "BaselineOnly"]:
+    for name in model_names:
         algo = get_model(name)
         algo.fit(trainset)
         predictions = algo.test(testset)
@@ -97,13 +122,20 @@ def evaluate_models():
         results.append({"Model": name, "RMSE": rmse, "MAE": mae})
     return pd.DataFrame(results)
 
+
 # STREAMLIT INTERFAZ
 st.title("🎬 Recomendador de Películas")
 
 user_ids = sorted(ratings['userId'].unique())
 selected_user = st.selectbox("👤 Selecciona un usuario", user_ids)
 
-model_options = ["Item-Item (Cosine)", "User-User (Cosine)", "SVD", "BaselineOnly"]
+model_options = [
+    "Item-Item (Cosine)", "User-User (Cosine)",
+    "SVD", "SVD++", "NMF",
+    "KNNBasic", "KNNWithMeans", "KNNWithZScore", "KNNBaseline",
+    "BaselineOnly", "NormalPredictor", "SlopeOne", "CoClustering"
+]
+
 selected_model = st.selectbox("🧠 Selecciona el algoritmo para recomendar", model_options)
 
 if st.button("🔍 Recomendar películas"):
@@ -119,6 +151,53 @@ if st.button("📊 Evaluar todos los modelos"):
         eval_df = evaluate_models()
     st.subheader("📈 Comparación de modelos")
     st.dataframe(eval_df)
+
+    st.subheader("🏆 Comparación de Modelos - RMSE")
+
+    best_rmse = eval_df["RMSE"].min()
+    fig, ax = plt.subplots(figsize=(12, 6))
+    bars = ax.bar(eval_df["Model"], eval_df["RMSE"], edgecolor="black")
+
+    # Colorear el mejor modelo
+    for bar, value in zip(bars, eval_df["RMSE"]):
+        if value == best_rmse:
+            bar.set_color("gold")
+        else:
+            bar.set_color("skyblue")
+
+    ax.set_ylabel("RMSE")
+    ax.set_title("RMSE por Modelo (más bajo es mejor)")
+    ax.tick_params(axis='x', rotation=45)
+    for bar in bars:
+        height = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width()/2, height + 0.005, f"{height:.3f}", ha='center', fontsize=9)
+
+    st.pyplot(fig)
+
+
+    # Gráfico de MAE con color para el mejor modelo
+    st.subheader("🏅 Comparación de Modelos - MAE")
+
+    best_mae = eval_df["MAE"].min()
+    fig, ax = plt.subplots(figsize=(12, 6))
+    bars = ax.bar(eval_df["Model"], eval_df["MAE"], edgecolor="black")
+
+    # Colorear el mejor modelo
+    for bar, value in zip(bars, eval_df["MAE"]):
+        if value == best_mae:
+            bar.set_color("limegreen")
+        else:
+            bar.set_color("lightcoral")
+
+    ax.set_ylabel("MAE")
+    ax.set_title("MAE por Modelo (más bajo es mejor)")
+    ax.tick_params(axis='x', rotation=45)
+    for bar in bars:
+        height = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width()/2, height + 0.005, f"{height:.3f}", ha='center', fontsize=9)
+
+    st.pyplot(fig)
+    
 
     # Gráfico de barras mejorado
     st.subheader("🔬 RMSE por modelo")

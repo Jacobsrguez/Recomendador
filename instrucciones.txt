@@ -1,2 +1,5 @@
 source venv/bin/activate
 streamlit run filtrado.py
+
+Cosas que he instalado
+pip install matplotlib

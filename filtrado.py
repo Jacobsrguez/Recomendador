@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import random
 from surprise import Dataset, Reader, KNNBasic, SVD, BaselineOnly, SVDpp, NMF, KNNWithMeans, KNNWithZScore, KNNBaseline, NormalPredictor, SlopeOne, CoClustering
 from surprise.model_selection import train_test_split
 from surprise import accuracy
@@ -39,12 +40,9 @@ if st.session_state.login_state == "not_logged_in":
       st.rerun()
   st.stop()
 
-
-
-
 # --- SI YA SE LOGUEÓ ---
 if st.session_state.login_state == "admin":
-  # INFO DEL DATASET
+  # INFO DEL DATASET -> Desplegable de la barra lateral
   st.sidebar.title("📊 Información del Dataset")
 
   # Número de usuarios únicos
@@ -296,3 +294,65 @@ if st.session_state.login_state == "admin":
   top_movies.columns = ['movieId', 'Cantidad de Valoraciones']
   top_movies = top_movies.merge(movies, on='movieId')
   st.table(top_movies[['title', 'Cantidad de Valoraciones']])
+
+# --- Inicializar estado si es necesario
+if "guest_ratings" not in st.session_state:
+  st.session_state.guest_ratings = []
+
+if "current_guest_movie" not in st.session_state:
+  top_movies = ratings['movieId'].value_counts().head(200).index.tolist()
+  st.session_state.current_guest_movie = random.choice(top_movies)
+
+# --- Mostrar progreso
+valoradas = len(st.session_state.guest_ratings)
+min_requeridas = 5
+st.title("👋 Bienvenido invitado")
+st.markdown(f"🎯 Has valorado **{valoradas} de {min_requeridas}** películas necesarias para obtener recomendaciones.")
+
+# --- Mostrar película actual
+current_id = st.session_state.current_guest_movie
+movie_title = movies[movies['movieId'] == current_id]['title'].values[0]
+st.subheader(f"🎬 ¿Has visto esta película?")
+st.markdown(f"**{movie_title}**")
+
+# --- Slider para puntuar
+rating = st.slider("⭐ Valora esta película", 0.5, 5.0, 3.0, step=0.5)
+
+col1, col2 = st.columns(2)
+
+with col1:
+  if st.button("✅ Valorar"):
+    # Guardar valoración
+    st.session_state.guest_ratings.append({
+      "userId": 999999,
+      "movieId": current_id,
+      "rating": rating
+    })
+    # Elegir nueva película
+    top_movies = ratings['movieId'].value_counts().head(200).index.tolist()
+    ya_vistas = [r["movieId"] for r in st.session_state.guest_ratings]
+    posibles = [m for m in top_movies if m not in ya_vistas]
+    if posibles:
+      st.session_state.current_guest_movie = random.choice(posibles)
+    else:
+      st.warning("🎉 Has valorado todas las películas de la lista.")
+
+    st.rerun()
+
+with col2:
+  if st.button("🔄 Cambiar película"):
+    top_movies = ratings['movieId'].value_counts().head(200).index.tolist()
+    ya_vistas = [r["movieId"] for r in st.session_state.guest_ratings]
+    posibles = [m for m in top_movies if m != current_id and m not in ya_vistas]
+    if posibles:
+      st.session_state.current_guest_movie = random.choice(posibles)
+      st.rerun()
+    else:
+      st.warning("⚠️ No hay más películas para mostrar.")
+
+# --- Si ya valoró el mínimo, mostramos botón para ver recomendaciones
+if valoradas >= min_requeridas:
+  st.success("✅ ¡Listo! Ya podés ver tus recomendaciones.")
+  if st.button("🎯 Ver recomendaciones"):
+    st.session_state.login_state = "guest_ready"
+    st.rerun()

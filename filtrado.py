@@ -218,17 +218,15 @@ if st.button("📊 Evaluar todos los modelos"):
 st.markdown("## 📈 Distribución de Valoraciones")
 
 # Histograma de valoraciones por usuario
-st.subheader("👥 Valoraciones por Usuario")
-st.caption("Distribución de valoraciones por usuario (usuarios con < 1000 valoraciones)")
-
-user_rating_counts = ratings.groupby('userId').size()
-filtered_user_ratings = user_rating_counts[user_rating_counts < 1000]
-
-fig, ax = plt.subplots()
-ax.hist(filtered_user_ratings, bins=50, color='skyblue', edgecolor='black')
-ax.set_xlabel("Número de valoraciones")
-ax.set_ylabel("Cantidad de usuarios")
-st.pyplot(fig)
+with st.expander("👥 Valoraciones por Usuario"):
+    st.caption("Distribución de valoraciones por usuario (usuarios con < 1000 valoraciones)")
+    user_rating_counts = ratings.groupby('userId').size()
+    filtered_user_ratings = user_rating_counts[user_rating_counts < 1000]
+    fig, ax = plt.subplots()
+    ax.hist(filtered_user_ratings, bins=50, color='skyblue', edgecolor='black')
+    ax.set_xlabel("Número de valoraciones")
+    ax.set_ylabel("Cantidad de usuarios")
+    st.pyplot(fig)
 
 # Histograma de valoraciones por película
 st.subheader("🎞️ Valoraciones por Película")

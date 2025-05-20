@@ -215,7 +215,8 @@ if st.button("📊 Evaluar todos los modelos"):
     st.pyplot(fig)
 
 # Análisis de distribución
-with st.expander("## 📈 Gráficas de Valoraciones"):
+st.subheader("📈 Gráficas de Valoraciones")
+with st.expander("Mostrar/Ocultar Gráficas de Valoraciones"):
   # Histograma de valoraciones por usuario
   st.subheader("👥 Valoraciones por Usuario")
   st.caption("Distribución de valoraciones por usuario (usuarios con < 1000 valoraciones)")

@@ -82,6 +82,12 @@ if st.session_state.login_state == "admin":
   top_genres = genre_rating_avg.head(5).index.tolist()
   st.sidebar.markdown(f"🌟 **Géneros favoritos del usuario {selected_user_genres}:** {', '.join(top_genres)}")
 
+  st.sidebar.markdown("---")  # Separador visual
+  cerrar = st.sidebar.button("🔴 Cerrar sesión")
+
+  if cerrar:
+    st.session_state.login_state = "not_logged_in"
+    st.rerun()
 
   # Conversion de el dataset para libreria Surprise
   reader = Reader(rating_scale=(0.5, 5.0))

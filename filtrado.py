@@ -229,17 +229,16 @@ with st.expander("👥 Valoraciones por Usuario"):
     st.pyplot(fig)
 
 # Histograma de valoraciones por película
-st.subheader("🎞️ Valoraciones por Película")
-st.caption("Distribución de valoraciones por película (películas con < 100 valoraciones)")
+with st.expander("🎞️ Valoraciones por Película"):
+    st.caption("Distribución de valoraciones por película (películas con < 100 valoraciones)")
+    movie_rating_counts = ratings.groupby('movieId').size()
+    filtered_movie_ratings = movie_rating_counts[movie_rating_counts < 100]
+    fig, ax = plt.subplots()
+    ax.hist(filtered_movie_ratings, bins=50, color='lightgreen', edgecolor='black')
+    ax.set_xlabel("Número de valoraciones")
+    ax.set_ylabel("Cantidad de películas")
+    st.pyplot(fig)
 
-movie_rating_counts = ratings.groupby('movieId').size()
-filtered_movie_ratings = movie_rating_counts[movie_rating_counts < 100]
-
-fig, ax = plt.subplots()
-ax.hist(filtered_movie_ratings, bins=50, color='lightgreen', edgecolor='black')
-ax.set_xlabel("Número de valoraciones")
-ax.set_ylabel("Cantidad de películas")
-st.pyplot(fig)
 
 st.subheader("👑 Top 5 Usuarios Más Activos")
 top_users = ratings['userId'].value_counts().head(5).reset_index()

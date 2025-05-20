@@ -138,81 +138,86 @@ model_options = [
 
 selected_model = st.selectbox("🧠 Selecciona el algoritmo para recomendar", model_options)
 
-if st.button("🔍 Recomendar películas"):
-    with st.spinner("Entrenando modelo..."):
-        algo = get_model(selected_model)
-        algo.fit(trainset)
-        recommendations = recommend_movies(selected_user, algo)
-    st.success(f"🎯 Recomendaciones para el usuario {selected_user} usando {selected_model}:")
-    st.table(recommendations)
+col1, col2 = st.columns(2)
+with col1:
+  recomendar = st.button("🔍 Recomendar películas")
+if recomendar:
+  with st.spinner("Entrenando modelo..."):
+    algo = get_model(selected_model)
+    algo.fit(trainset)
+    recommendations = recommend_movies(selected_user, algo)
+  st.success(f"🎯 Recomendaciones para el usuario {selected_user} usando {selected_model}:")
+  st.table(recommendations)
 
-if st.button("📊 Evaluar todos los modelos"):
-    with st.spinner("Evaluando..."):
-        eval_df = evaluate_models()
-    st.subheader("📈 Comparación de modelos")
-    st.dataframe(eval_df)
+with col2:
+  evaluar = st.button("📊 Evaluar modelo")
+if evaluar:
+  with st.spinner("Evaluando..."):
+    eval_df = evaluate_models()
+  st.subheader("📈 Comparación de modelos")
+  st.dataframe(eval_df)
 
-    st.subheader("🏆 Comparación de Modelos - RMSE")
+  st.subheader("🏆 Comparación de Modelos - RMSE")
 
-    best_rmse = eval_df["RMSE"].min()
-    fig, ax = plt.subplots(figsize=(12, 6))
-    bars = ax.bar(eval_df["Model"], eval_df["RMSE"], edgecolor="black")
+  best_rmse = eval_df["RMSE"].min()
+  fig, ax = plt.subplots(figsize=(12, 6))
+  bars = ax.bar(eval_df["Model"], eval_df["RMSE"], edgecolor="black")
 
-    # Colorear el mejor modelo
-    for bar, value in zip(bars, eval_df["RMSE"]):
-        if value == best_rmse:
-            bar.set_color("gold")
-        else:
-            bar.set_color("skyblue")
+  # Colorear el mejor modelo
+  for bar, value in zip(bars, eval_df["RMSE"]):
+    if value == best_rmse:
+      bar.set_color("gold")
+    else:
+      bar.set_color("skyblue")
 
-    ax.set_ylabel("RMSE")
-    ax.set_title("RMSE por Modelo (más bajo es mejor)")
-    ax.tick_params(axis='x', rotation=45)
-    for bar in bars:
-        height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2, height + 0.005, f"{height:.3f}", ha='center', fontsize=9)
+  ax.set_ylabel("RMSE")
+  ax.set_title("RMSE por Modelo (más bajo es mejor)")
+  ax.tick_params(axis='x', rotation=45)
+  for bar in bars:
+    height = bar.get_height()
+    ax.text(bar.get_x() + bar.get_width()/2, height + 0.005, f"{height:.3f}", ha='center', fontsize=9)
 
-    st.pyplot(fig)
+  st.pyplot(fig)
 
 
-    # Gráfico de MAE con color para el mejor modelo
-    st.subheader("🏅 Comparación de Modelos - MAE")
+  # Gráfico de MAE con color para el mejor modelo
+  st.subheader("🏅 Comparación de Modelos - MAE")
 
-    best_mae = eval_df["MAE"].min()
-    fig, ax = plt.subplots(figsize=(12, 6))
-    bars = ax.bar(eval_df["Model"], eval_df["MAE"], edgecolor="black")
+  best_mae = eval_df["MAE"].min()
+  fig, ax = plt.subplots(figsize=(12, 6))
+  bars = ax.bar(eval_df["Model"], eval_df["MAE"], edgecolor="black")
 
-    # Colorear el mejor modelo
-    for bar, value in zip(bars, eval_df["MAE"]):
-        if value == best_mae:
-            bar.set_color("limegreen")
-        else:
-            bar.set_color("lightcoral")
+  # Colorear el mejor modelo
+  for bar, value in zip(bars, eval_df["MAE"]):
+      if value == best_mae:
+          bar.set_color("limegreen")
+      else:
+          bar.set_color("lightcoral")
 
-    ax.set_ylabel("MAE")
-    ax.set_title("MAE por Modelo (más bajo es mejor)")
-    ax.tick_params(axis='x', rotation=45)
-    for bar in bars:
-        height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2, height + 0.005, f"{height:.3f}", ha='center', fontsize=9)
+  ax.set_ylabel("MAE")
+  ax.set_title("MAE por Modelo (más bajo es mejor)")
+  ax.tick_params(axis='x', rotation=45)
+  for bar in bars:
+      height = bar.get_height()
+      ax.text(bar.get_x() + bar.get_width()/2, height + 0.005, f"{height:.3f}", ha='center', fontsize=9)
 
-    st.pyplot(fig)
+  st.pyplot(fig)
     
 
-    # Gráfico de barras mejorado
-    st.subheader("🔬 RMSE por modelo")
-    fig, ax = plt.subplots(figsize=(10, 6))
-    bars = ax.bar(eval_df["Model"], eval_df["RMSE"], width=0.5)
-    ax.set_ylabel("RMSE", fontsize=12)
-    ax.set_title("Comparación de RMSE entre modelos", fontsize=14)
-    plt.xticks(rotation=20, ha="right", fontsize=10)
+  # Gráfico de barras mejorado
+  st.subheader("🔬 RMSE por modelo")
+  fig, ax = plt.subplots(figsize=(10, 6))
+  bars = ax.bar(eval_df["Model"], eval_df["RMSE"], width=0.5)
+  ax.set_ylabel("RMSE", fontsize=12)
+  ax.set_title("Comparación de RMSE entre modelos", fontsize=14)
+  plt.xticks(rotation=20, ha="right", fontsize=10)
 
-    # Mostrar valores encima de las barras
-    for bar in bars:
-        height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width() / 2, height + 0.01, f"{height:.3f}", ha='center', fontsize=10)
+  # Mostrar valores encima de las barras
+  for bar in bars:
+    height = bar.get_height()
+    ax.text(bar.get_x() + bar.get_width() / 2, height + 0.01, f"{height:.3f}", ha='center', fontsize=10)
 
-    st.pyplot(fig)
+  st.pyplot(fig)
 
 # Análisis de distribución
 st.subheader("📈 Gráficas de Valoraciones")

@@ -52,17 +52,11 @@ def get_model(algorithm_name):
     return KNNBasic()
 
 
-
-if "login_state" not in st.session_state:
-  st.session_state.login_state = "not_logged_in"
-    
-if st.session_state.login_state == "not_logged_in":
+def mostrar_login():
   st.title("Inicio de Sesión")
   username = st.text_input("👤 Usuario")
   password = st.text_input("🔑 Contraseña", type="password")
-
   col1, col2 = st.columns([1, 1])
-
   with col1:
     if st.button("Iniciar sesión"):
       if username == "admin" and password == "1234":
@@ -79,6 +73,11 @@ if st.session_state.login_state == "not_logged_in":
       st.rerun()
   st.stop()
 
+if "login_state" not in st.session_state:
+  st.session_state.login_state = "not_logged_in"
+    
+if st.session_state.login_state == "not_logged_in":
+  mostrar_login()
 # --- SI YA SE LOGUEÓ ---
 if st.session_state.login_state == "admin":
   # INFO DEL DATASET -> Desplegable de la barra lateral

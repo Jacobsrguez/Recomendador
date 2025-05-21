@@ -5,10 +5,18 @@ import random
 from surprise import Dataset, Reader, KNNBasic, SVD, BaselineOnly, SVDpp, NMF, KNNWithMeans, KNNWithZScore, KNNBaseline, NormalPredictor, SlopeOne, CoClustering
 from surprise.model_selection import train_test_split
 from surprise import accuracy
+from urllib.parse import parse_qs
 
 # Cargar datasets
 ratings = pd.read_csv("ratings.csv")
 movies = pd.read_csv("movies.csv")
+
+# Verificamos si se solicitó volver al login desde el botón HTML
+query_params = st.query_params
+if "volver_login" in query_params:
+  st.session_state.login_state = "not_logged_in"
+  st.session_state.guest_ratings = []
+  st.experimental_rerun()
 
 ADMIN_USER = "admin"
 ADMIN_PASS = "1234"
@@ -307,6 +315,24 @@ if "current_guest_movie" not in st.session_state:
 # --- Mostrar progreso
 valoradas = len(st.session_state.guest_ratings)
 min_requeridas = 5
+st.markdown(
+  """
+  <div style="display: flex; justify-content: flex-end;">
+    <form action="">
+      <button type="submit" style="
+        background-color: #ff4b4b;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        cursor: pointer;
+      " formaction="?volver_login=1">Volver al login</button>
+    </form>
+  </div>
+  """,
+  unsafe_allow_html=True
+)
 st.title("👋 Bienvenido")
 st.markdown(f"🎯 Has valorado **{valoradas} de {min_requeridas}** películas necesarias para obtener recomendaciones.")
 
@@ -351,16 +377,9 @@ with col2:
     else:
       st.warning("⚠️ No hay más películas para mostrar.")
 
-# --- Botón en el sidebar para volver al login (modo invitado)
-if st.sidebar.button("🔐 Volver al login", key="volver_login_guest"):
-  st.session_state.login_state = "not_logged_in"
-  st.session_state.guest_ratings = []
-  st.rerun().guest_ratings = []
-  st.rerun()
-
 # --- Si ya valoró el mínimo, mostramos botón para ver recomendaciones
 if valoradas >= min_requeridas:
-  st.success("✅ ¡Listo! Ya podés ver tus recomendaciones.")
+  st.success("✅ ¡Listo! Ya puedes ver tus recomendaciones.")
   if st.button("🎯 Ver recomendaciones"):
     st.session_state.login_state = "guest_ready"
     st.rerun()

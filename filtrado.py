@@ -351,6 +351,13 @@ with col2:
     else:
       st.warning("⚠️ No hay más películas para mostrar.")
 
+# --- Botón en el sidebar para volver al login (modo invitado)
+if st.sidebar.button("🔐 Volver al login", key="volver_login_guest"):
+  st.session_state.login_state = "not_logged_in"
+  st.session_state.guest_ratings = []
+  st.rerun().guest_ratings = []
+  st.rerun()
+
 # --- Si ya valoró el mínimo, mostramos botón para ver recomendaciones
 if valoradas >= min_requeridas:
   st.success("✅ ¡Listo! Ya podés ver tus recomendaciones.")

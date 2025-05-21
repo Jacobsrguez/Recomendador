@@ -57,7 +57,7 @@ if "login_state" not in st.session_state:
   st.session_state.login_state = "not_logged_in"
     
 if st.session_state.login_state == "not_logged_in":
-  st.title("🔐 Inicio de Sesión")
+  st.title("Inicio de Sesión")
   username = st.text_input("👤 Usuario")
   password = st.text_input("🔑 Contraseña", type="password")
 
@@ -315,114 +315,116 @@ if "current_guest_movie" not in st.session_state:
 # --- Mostrar progreso
 valoradas = len(st.session_state.guest_ratings)
 min_requeridas = 5
-st.markdown(
-  """
-  <div style="display: flex; justify-content: flex-end;">
-    <form action="">
-      <button type="submit" style="
-        background-color: #ff4b4b;
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 8px;
-        font-size: 14px;
-        cursor: pointer;
-      " formaction="?volver_login=1">Volver al login</button>
-    </form>
-  </div>
-  """,
-  unsafe_allow_html=True
-)
-st.title("👋 Bienvenido")
-st.markdown(f"🎯 Has valorado **{valoradas} de {min_requeridas}** películas necesarias para obtener recomendaciones.")
 
-# --- Mostrar película actual
-current_id = st.session_state.current_guest_movie
-movie_title = movies[movies['movieId'] == current_id]['title'].values[0]
-st.subheader(f"🎬 ¿Has visto esta película?")
-st.markdown(f"**{movie_title}**")
+if st.session_state.login_state in ["guest", "guest_ready"]:
+  st.markdown(
+    """
+    <div style="display: flex; justify-content: flex-end;">
+      <form action="">
+        <button type="submit" style="
+          background-color: #ff4b4b;
+          color: white;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 8px;
+          font-size: 14px;
+          cursor: pointer;
+        " formaction="?volver_login=1">Volver al login</button>
+      </form>
+    </div>
+    """,
+    unsafe_allow_html=True
+  )
+  st.title("👋 Bienvenido")
+  st.markdown(f"🎯 Has valorado **{valoradas} de {min_requeridas}** películas necesarias para obtener recomendaciones.")
 
-# --- Slider para puntuar
-rating = st.slider("⭐ Valora esta película", 0.5, 5.0, 3.0, step=0.5)
+  # --- Mostrar película actual
+  current_id = st.session_state.current_guest_movie
+  movie_title = movies[movies['movieId'] == current_id]['title'].values[0]
+  st.subheader(f"🎬 ¿Has visto esta película?")
+  st.markdown(f"**{movie_title}**")
 
-col1, col2 = st.columns(2)
+  # --- Slider para puntuar
+  rating = st.slider("⭐ Valora esta película", 0.5, 5.0, 3.0, step=0.5)
 
-with col1:
-  if st.button("✅ Valorar"):
-    # Guardar valoración
-    st.session_state.guest_ratings.append({
-      "userId": 999999,
-      "movieId": current_id,
-      "rating": rating
-    })
-    # Elegir nueva película
-    top_movies = ratings['movieId'].value_counts().head(200).index.tolist()
-    ya_vistas = [r["movieId"] for r in st.session_state.guest_ratings]
-    posibles = [m for m in top_movies if m not in ya_vistas]
-    if posibles:
-      st.session_state.current_guest_movie = random.choice(posibles)
-    else:
-      st.warning("🎉 Has valorado todas las películas de la lista.")
+  col1, col2 = st.columns(2)
 
-    st.rerun()
+  with col1:
+    if st.button("✅ Valorar"):
+      # Guardar valoración
+      st.session_state.guest_ratings.append({
+        "userId": 999999,
+        "movieId": current_id,
+        "rating": rating
+      })
+      # Elegir nueva película
+      top_movies = ratings['movieId'].value_counts().head(200).index.tolist()
+      ya_vistas = [r["movieId"] for r in st.session_state.guest_ratings]
+      posibles = [m for m in top_movies if m not in ya_vistas]
+      if posibles:
+        st.session_state.current_guest_movie = random.choice(posibles)
+      else:
+        st.warning("🎉 Has valorado todas las películas de la lista.")
 
-with col2:
-  if st.button("🔄 Cambiar película"):
-    top_movies = ratings['movieId'].value_counts().head(200).index.tolist()
-    ya_vistas = [r["movieId"] for r in st.session_state.guest_ratings]
-    posibles = [m for m in top_movies if m != current_id and m not in ya_vistas]
-    if posibles:
-      st.session_state.current_guest_movie = random.choice(posibles)
       st.rerun()
-    else:
-      st.warning("⚠️ No hay más películas para mostrar.")
 
-# --- Si ya valoró el mínimo, mostramos botón para ver recomendaciones
-if valoradas >= min_requeridas:
-  st.success("✅ ¡Listo! Ya puedes ver tus recomendaciones.")
-  if st.button("🎯 Ver recomendaciones"):
-    st.session_state.login_state = "guest_ready"
-    st.rerun()
+  with col2:
+    if st.button("🔄 Cambiar película"):
+      top_movies = ratings['movieId'].value_counts().head(200).index.tolist()
+      ya_vistas = [r["movieId"] for r in st.session_state.guest_ratings]
+      posibles = [m for m in top_movies if m != current_id and m not in ya_vistas]
+      if posibles:
+        st.session_state.current_guest_movie = random.choice(posibles)
+        st.rerun()
+      else:
+        st.warning("⚠️ No hay más películas para mostrar.")
 
-# --- Mostrar recomendaciones si el invitado ya completó las valoraciones ---
-if st.session_state.login_state == "guest_ready":
-  st.title("🎬 Recomendaciones para Invitado")
+  # --- Si ya valoró el mínimo, mostramos botón para ver recomendaciones
+  if valoradas >= min_requeridas:
+    st.success("✅ ¡Listo! Ya puedes ver tus recomendaciones.")
+    if st.button("🎯 Ver recomendaciones"):
+      st.session_state.login_state = "guest_ready"
+      st.rerun()
 
-  guest_df = pd.DataFrame(st.session_state.guest_ratings)
-  reader = Reader(rating_scale=(0.5, 5.0))
-  data = Dataset.load_from_df(guest_df[['userId', 'movieId', 'rating']], reader)
-  trainset = data.build_full_trainset()
+  # --- Mostrar recomendaciones si el invitado ya completó las valoraciones ---
+  if st.session_state.login_state == "guest_ready":
+    st.title("🎬 Recomendaciones para Invitado")
 
-  model_options = [
-    "Item-Item (Cosine)", "User-User (Cosine)",
-    "SVD", "SVD++", "NMF",
-    "KNNBasic", "KNNWithMeans", "KNNWithZScore", "KNNBaseline",
-    "BaselineOnly", "NormalPredictor", "SlopeOne", "CoClustering"
-  ]
+    guest_df = pd.DataFrame(st.session_state.guest_ratings)
+    reader = Reader(rating_scale=(0.5, 5.0))
+    data = Dataset.load_from_df(guest_df[['userId', 'movieId', 'rating']], reader)
+    trainset = data.build_full_trainset()
 
-  selected_model = st.selectbox("🧠 Selecciona el algoritmo", model_options)
+    model_options = [
+      "Item-Item (Cosine)", "User-User (Cosine)",
+      "SVD", "SVD++", "NMF",
+      "KNNBasic", "KNNWithMeans", "KNNWithZScore", "KNNBaseline",
+      "BaselineOnly", "NormalPredictor", "SlopeOne", "CoClustering"
+    ]
 
-  def get_unseen_movies_guest():
-    seen = guest_df['movieId'].tolist()
-    all_movies = ratings['movieId'].unique()
-    return [m for m in all_movies if m not in seen]
+    selected_model = st.selectbox("🧠 Selecciona el algoritmo", model_options)
 
-  def recommend_guest(user_id, algo, n=10):
-    unseen = get_unseen_movies_guest()
-    predictions = [algo.predict(user_id, movie_id) for movie_id in unseen]
-    predictions.sort(key=lambda x: x.est, reverse=True)
-    top_n = predictions[:n]
-    result = pd.DataFrame([{
-      "movieId": pred.iid,
-      "Predicted Rating": round(pred.est, 2)
-    } for pred in top_n])
-    result = result.merge(movies, on="movieId", how="left")[['title', 'Predicted Rating']]
-    return result
+    def get_unseen_movies_guest():
+      seen = guest_df['movieId'].tolist()
+      all_movies = ratings['movieId'].unique()
+      return [m for m in all_movies if m not in seen]
 
-  if st.button("🔍 Obtener recomendaciones"):
-    with st.spinner("Entrenando modelo..."):
-      algo = get_model(selected_model)
-      algo.fit(trainset)
-      recs = recommend_guest(999999, algo)
-    st.success("🎯 Recomendaciones generadas:")
-    st.table(recs)
+    def recommend_guest(user_id, algo, n=10):
+      unseen = get_unseen_movies_guest()
+      predictions = [algo.predict(user_id, movie_id) for movie_id in unseen]
+      predictions.sort(key=lambda x: x.est, reverse=True)
+      top_n = predictions[:n]
+      result = pd.DataFrame([{
+        "movieId": pred.iid,
+        "Predicted Rating": round(pred.est, 2)
+      } for pred in top_n])
+      result = result.merge(movies, on="movieId", how="left")[['title', 'Predicted Rating']]
+      return result
+
+    if st.button("🔍 Obtener recomendaciones"):
+      with st.spinner("Entrenando modelo..."):
+        algo = get_model(selected_model)
+        algo.fit(trainset)
+        recs = recommend_guest(999999, algo)
+      st.success("🎯 Recomendaciones generadas:")
+      st.table(recs)

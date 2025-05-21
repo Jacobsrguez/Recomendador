@@ -73,13 +73,7 @@ def mostrar_login():
       st.rerun()
   st.stop()
 
-if "login_state" not in st.session_state:
-  st.session_state.login_state = "not_logged_in"
-    
-if st.session_state.login_state == "not_logged_in":
-  mostrar_login()
-# --- SI YA SE LOGUEÓ ---
-if st.session_state.login_state == "admin":
+def admin_login():
   # INFO DEL DATASET -> Desplegable de la barra lateral
   st.sidebar.title("📊 Información del Dataset")
 
@@ -236,17 +230,17 @@ if st.session_state.login_state == "admin":
 
     # Colorear el mejor modelo
     for bar, value in zip(bars, eval_df["MAE"]):
-        if value == best_mae:
-            bar.set_color("limegreen")
-        else:
-            bar.set_color("lightcoral")
+      if value == best_mae:
+        bar.set_color("limegreen")
+      else:
+        bar.set_color("lightcoral")
 
     ax.set_ylabel("MAE")
     ax.set_title("MAE por Modelo (más bajo es mejor)")
     ax.tick_params(axis='x', rotation=45)
     for bar in bars:
-        height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2, height + 0.005, f"{height:.3f}", ha='center', fontsize=9)
+      height = bar.get_height()
+      ax.text(bar.get_x() + bar.get_width()/2, height + 0.005, f"{height:.3f}", ha='center', fontsize=9)
 
     st.pyplot(fig)
       
@@ -302,6 +296,13 @@ if st.session_state.login_state == "admin":
   top_movies.columns = ['movieId', 'Cantidad de Valoraciones']
   top_movies = top_movies.merge(movies, on='movieId')
   st.table(top_movies[['title', 'Cantidad de Valoraciones']])
+
+if "login_state" not in st.session_state:
+  st.session_state.login_state = "not_logged_in"
+if st.session_state.login_state == "not_logged_in":
+  mostrar_login()
+elif st.session_state.login_state == "admin":
+  admin_login()
 
 # --- Inicializar estado si es necesario
 if "guest_ratings" not in st.session_state:

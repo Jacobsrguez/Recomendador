@@ -13,6 +13,37 @@ movies = pd.read_csv("movies.csv")
 ADMIN_USER = "admin"
 ADMIN_PASS = "1234"
 
+def get_model(algorithm_name):
+  if algorithm_name == "Item-Item (Cosine)":
+    return KNNBasic(sim_options={'name': 'cosine', 'user_based': False})
+  elif algorithm_name == "User-User (Cosine)":
+    return KNNBasic(sim_options={'name': 'cosine', 'user_based': True})
+  elif algorithm_name == "SVD":
+    return SVD()
+  elif algorithm_name == "SVD++":
+    return SVDpp()
+  elif algorithm_name == "NMF":
+    return NMF()
+  elif algorithm_name == "KNNBasic":
+    return KNNBasic()
+  elif algorithm_name == "KNNWithMeans":
+    return KNNWithMeans()
+  elif algorithm_name == "KNNWithZScore":
+    return KNNWithZScore()
+  elif algorithm_name == "KNNBaseline":
+    return KNNBaseline()
+  elif algorithm_name == "BaselineOnly":
+    return BaselineOnly()
+  elif algorithm_name == "NormalPredictor":
+    return NormalPredictor()
+  elif algorithm_name == "SlopeOne":
+    return SlopeOne()
+  elif algorithm_name == "CoClustering":
+    return CoClustering()
+  else:
+    return KNNBasic()
+
+
 
 if "login_state" not in st.session_state:
   st.session_state.login_state = "not_logged_in"
@@ -92,36 +123,6 @@ if st.session_state.login_state == "admin":
   data = Dataset.load_from_df(ratings[['userId', 'movieId', 'rating']], reader)
   trainset, testset = train_test_split(data, test_size=0.2, random_state=42)
 
-
-  def get_model(algorithm_name):
-      if algorithm_name == "Item-Item (Cosine)":
-          return KNNBasic(sim_options={'name': 'cosine', 'user_based': False})
-      elif algorithm_name == "User-User (Cosine)":
-          return KNNBasic(sim_options={'name': 'cosine', 'user_based': True})
-      elif algorithm_name == "SVD":
-          return SVD()
-      elif algorithm_name == "SVD++":
-          return SVDpp()
-      elif algorithm_name == "NMF":
-          return NMF()
-      elif algorithm_name == "KNNBasic":
-          return KNNBasic()
-      elif algorithm_name == "KNNWithMeans":
-          return KNNWithMeans()
-      elif algorithm_name == "KNNWithZScore":
-          return KNNWithZScore()
-      elif algorithm_name == "KNNBaseline":
-          return KNNBaseline()
-      elif algorithm_name == "BaselineOnly":
-          return BaselineOnly()
-      elif algorithm_name == "NormalPredictor":
-          return NormalPredictor()
-      elif algorithm_name == "SlopeOne":
-          return SlopeOne()
-      elif algorithm_name == "CoClustering":
-          return CoClustering()
-      else:
-          return KNNBasic()
 
 
   # Peliculas que no han sido vistas por un usuario
@@ -306,7 +307,7 @@ if "current_guest_movie" not in st.session_state:
 # --- Mostrar progreso
 valoradas = len(st.session_state.guest_ratings)
 min_requeridas = 5
-st.title("👋 Bienvenido invitado")
+st.title("👋 Bienvenido")
 st.markdown(f"🎯 Has valorado **{valoradas} de {min_requeridas}** películas necesarias para obtener recomendaciones.")
 
 # --- Mostrar película actual
@@ -356,3 +357,46 @@ if valoradas >= min_requeridas:
   if st.button("🎯 Ver recomendaciones"):
     st.session_state.login_state = "guest_ready"
     st.rerun()
+
+# --- Mostrar recomendaciones si el invitado ya completó las valoraciones ---
+if st.session_state.login_state == "guest_ready":
+  st.title("🎬 Recomendaciones para Invitado")
+
+  guest_df = pd.DataFrame(st.session_state.guest_ratings)
+  reader = Reader(rating_scale=(0.5, 5.0))
+  data = Dataset.load_from_df(guest_df[['userId', 'movieId', 'rating']], reader)
+  trainset = data.build_full_trainset()
+
+  model_options = [
+    "Item-Item (Cosine)", "User-User (Cosine)",
+    "SVD", "SVD++", "NMF",
+    "KNNBasic", "KNNWithMeans", "KNNWithZScore", "KNNBaseline",
+    "BaselineOnly", "NormalPredictor", "SlopeOne", "CoClustering"
+  ]
+
+  selected_model = st.selectbox("🧠 Selecciona el algoritmo", model_options)
+
+  def get_unseen_movies_guest():
+    seen = guest_df['movieId'].tolist()
+    all_movies = ratings['movieId'].unique()
+    return [m for m in all_movies if m not in seen]
+
+  def recommend_guest(user_id, algo, n=10):
+    unseen = get_unseen_movies_guest()
+    predictions = [algo.predict(user_id, movie_id) for movie_id in unseen]
+    predictions.sort(key=lambda x: x.est, reverse=True)
+    top_n = predictions[:n]
+    result = pd.DataFrame([{
+      "movieId": pred.iid,
+      "Predicted Rating": round(pred.est, 2)
+    } for pred in top_n])
+    result = result.merge(movies, on="movieId", how="left")[['title', 'Predicted Rating']]
+    return result
+
+  if st.button("🔍 Obtener recomendaciones"):
+    with st.spinner("Entrenando modelo..."):
+      algo = get_model(selected_model)
+      algo.fit(trainset)
+      recs = recommend_guest(999999, algo)
+    st.success("🎯 Recomendaciones generadas:")
+    st.table(recs)

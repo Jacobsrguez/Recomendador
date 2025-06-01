@@ -395,36 +395,29 @@ if st.session_state.login_state in ["guest", "guest_ready"]:
     data = Dataset.load_from_df(guest_df[['userId', 'movieId', 'rating']], reader)
     trainset = data.build_full_trainset()
 
-    model_options = [
-      "Item-Item (Cosine)", "User-User (Cosine)",
-      "SVD", "SVD++", "NMF",
-      "KNNBasic", "KNNWithMeans", "KNNWithZScore", "KNNBaseline",
-      "BaselineOnly", "NormalPredictor", "SlopeOne", "CoClustering"
-    ]
-
-    selected_model = st.selectbox("🧠 Selecciona el algoritmo", model_options)
-
-    def get_unseen_movies_guest():
-      seen = guest_df['movieId'].tolist()
-      all_movies = ratings['movieId'].unique()
-      return [m for m in all_movies if m not in seen]
-
-    def recommend_guest(user_id, algo, n=10):
-      unseen = get_unseen_movies_guest()
-      predictions = [algo.predict(user_id, movie_id) for movie_id in unseen]
-      predictions.sort(key=lambda x: x.est, reverse=True)
-      top_n = predictions[:n]
-      result = pd.DataFrame([{
-        "movieId": pred.iid,
-        "Predicted Rating": round(pred.est, 2)
-      } for pred in top_n])
-      result = result.merge(movies, on="movieId", how="left")[['title', 'Predicted Rating']]
-      return result
-
-    if st.button("🔍 Obtener recomendaciones"):
-      with st.spinner("Entrenando modelo..."):
-        algo = get_model(selected_model)
+    # Usar directamente el algoritmo SVD++
+    algo = SVDpp()
+    with st.spinner("Entrenando modelo SVD++ y generando recomendaciones..."):
         algo.fit(trainset)
+
+        def get_unseen_movies_guest():
+            seen = guest_df['movieId'].tolist()
+            all_movies = ratings['movieId'].unique()
+            return [m for m in all_movies if m not in seen]
+
+        def recommend_guest(user_id, algo, n=10):
+            unseen = get_unseen_movies_guest()
+            predictions = [algo.predict(user_id, movie_id) for movie_id in unseen]
+            predictions.sort(key=lambda x: x.est, reverse=True)
+            top_n = predictions[:n]
+            result = pd.DataFrame([{
+                "movieId": pred.iid,
+                "Predicted Rating": round(pred.est, 2)
+            } for pred in top_n])
+            result = result.merge(movies, on="movieId", how="left")[['title', 'Predicted Rating']]
+            return result
+
         recs = recommend_guest(999999, algo)
-      st.success("🎯 Recomendaciones generadas:")
-      st.table(recs)
+
+    st.success("🎯 Recomendaciones generadas usando **SVD++**:")
+    st.table(recs)

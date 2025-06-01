@@ -387,17 +387,21 @@ if st.session_state.login_state in ["guest", "guest_ready"]:
       st.rerun()
 
   # --- Mostrar recomendaciones si el invitado ya completó las valoraciones ---
-  if st.session_state.login_state == "guest_ready":
-    st.title("🎬 Recomendaciones para Invitado")
+if st.session_state.login_state == "guest_ready":
+    st.title("Aquí están tus recomendaciones")
 
     guest_df = pd.DataFrame(st.session_state.guest_ratings)
+
+    # Combinar valoraciones reales con las del invitado
+    combined_df = pd.concat([ratings, guest_df], ignore_index=True)
+
     reader = Reader(rating_scale=(0.5, 5.0))
-    data = Dataset.load_from_df(guest_df[['userId', 'movieId', 'rating']], reader)
+    data = Dataset.load_from_df(combined_df[['userId', 'movieId', 'rating']], reader)
     trainset = data.build_full_trainset()
 
-    # Usar directamente el algoritmo SVD++
+    # Entrenar con SVD++
     algo = SVDpp()
-    with st.spinner("Entrenando modelo SVD++ y generando recomendaciones..."):
+    with st.spinner("Entrenando modelo por favor espera un momento..."):
         algo.fit(trainset)
 
         def get_unseen_movies_guest():
@@ -418,6 +422,4 @@ if st.session_state.login_state in ["guest", "guest_ready"]:
             return result
 
         recs = recommend_guest(999999, algo)
-
-    st.success("🎯 Recomendaciones generadas usando **SVD++**:")
     st.table(recs)

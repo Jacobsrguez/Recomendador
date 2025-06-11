@@ -297,26 +297,20 @@ def admin_login():
   top_movies = top_movies.merge(movies, on='movieId')
   st.table(top_movies[['title', 'Cantidad de Valoraciones']])
 
-if "login_state" not in st.session_state:
-  st.session_state.login_state = "not_logged_in"
-if st.session_state.login_state == "not_logged_in":
-  mostrar_login()
-elif st.session_state.login_state == "admin":
-  admin_login()
 
-# --- Inicializar estado si es necesario
-if "guest_ratings" not in st.session_state:
-  st.session_state.guest_ratings = []
+def guest():
+  # --- Inicializar estado si es necesario
+  if "guest_ratings" not in st.session_state:
+    st.session_state.guest_ratings = []
 
-if "current_guest_movie" not in st.session_state:
-  top_movies = ratings['movieId'].value_counts().head(200).index.tolist()
-  st.session_state.current_guest_movie = random.choice(top_movies)
+  if "current_guest_movie" not in st.session_state:
+    top_movies = ratings['movieId'].value_counts().head(200).index.tolist()
+    st.session_state.current_guest_movie = random.choice(top_movies)
 
-# --- Mostrar progreso
-valoradas = len(st.session_state.guest_ratings)
-min_requeridas = 5
+  # --- Mostrar progreso
+  valoradas = len(st.session_state.guest_ratings)
+  min_requeridas = 5
 
-if st.session_state.login_state in ["guest", "guest_ready"]:
   st.markdown(
     """
     <div style="display: flex; justify-content: flex-end;">
@@ -381,45 +375,56 @@ if st.session_state.login_state in ["guest", "guest_ready"]:
 
   # --- Si ya valoró el mínimo, mostramos botón para ver recomendaciones
   if valoradas >= min_requeridas:
-    st.success("✅ ¡Listo! Ya puedes ver tus recomendaciones.")
+
     if st.button("🎯 Ver recomendaciones"):
-      st.session_state.login_state = "guest_ready"
-      st.rerun()
+      st.session_state.show_recommendations = True
 
-  # --- Mostrar recomendaciones si el invitado ya completó las valoraciones ---
-if st.session_state.login_state == "guest_ready":
-    st.title("Aquí están tus recomendaciones")
+    if st.session_state.show_recommendations:  
+      # --- Mostrar recomendaciones si el invitado ya completó las valoraciones ---
+      st.success("Listo!. Aquí están tus recomendaciones")
+      guest_df = pd.DataFrame(st.session_state.guest_ratings)
 
-    guest_df = pd.DataFrame(st.session_state.guest_ratings)
+      # Combinar valoraciones reales con las del invitado
+      combined_df = pd.concat([ratings, guest_df], ignore_index=True)
 
-    # Combinar valoraciones reales con las del invitado
-    combined_df = pd.concat([ratings, guest_df], ignore_index=True)
+      reader = Reader(rating_scale=(0.5, 5.0))
+      data = Dataset.load_from_df(combined_df[['userId', 'movieId', 'rating']], reader)
+      trainset = data.build_full_trainset()
 
-    reader = Reader(rating_scale=(0.5, 5.0))
-    data = Dataset.load_from_df(combined_df[['userId', 'movieId', 'rating']], reader)
-    trainset = data.build_full_trainset()
+      # Entrenar con SVD++
+      algo = SVDpp()
+      with st.spinner("Entrenando modelo por favor espera un momento..."):
+          algo.fit(trainset)
 
-    # Entrenar con SVD++
-    algo = SVDpp()
-    with st.spinner("Entrenando modelo por favor espera un momento..."):
-        algo.fit(trainset)
+          def get_unseen_movies_guest():
+              seen = guest_df['movieId'].tolist()
+              all_movies = ratings['movieId'].unique()
+              return [m for m in all_movies if m not in seen]
 
-        def get_unseen_movies_guest():
-            seen = guest_df['movieId'].tolist()
-            all_movies = ratings['movieId'].unique()
-            return [m for m in all_movies if m not in seen]
+          def recommend_guest(user_id, algo, n=10):
+              unseen = get_unseen_movies_guest()
+              predictions = [algo.predict(user_id, movie_id) for movie_id in unseen]
+              predictions.sort(key=lambda x: x.est, reverse=True)
+              top_n = predictions[:n]
+              result = pd.DataFrame([{
+                  "movieId": pred.iid,
+                  "Predicted Rating": round(pred.est, 2)
+              } for pred in top_n])
+              result = result.merge(movies, on="movieId", how="left")[['title', 'Predicted Rating']]
+              return result
 
-        def recommend_guest(user_id, algo, n=10):
-            unseen = get_unseen_movies_guest()
-            predictions = [algo.predict(user_id, movie_id) for movie_id in unseen]
-            predictions.sort(key=lambda x: x.est, reverse=True)
-            top_n = predictions[:n]
-            result = pd.DataFrame([{
-                "movieId": pred.iid,
-                "Predicted Rating": round(pred.est, 2)
-            } for pred in top_n])
-            result = result.merge(movies, on="movieId", how="left")[['title', 'Predicted Rating']]
-            return result
+          recs = recommend_guest(999999, algo)
+      st.table(recs)
 
-        recs = recommend_guest(999999, algo)
-    st.table(recs)
+
+# Hay que asegurarse de que el estado de sesión está inicializado porque si no existe Streamlit lanza ese AttributeError
+if "login_state" not in st.session_state:
+    st.session_state.login_state = "not_logged_in"
+if "show_recommendations" not in st.session_state:
+    st.session_state.show_recommendations = False
+if st.session_state.login_state == "not_logged_in":
+    mostrar_login()
+elif st.session_state.login_state == "admin":
+    admin_login()
+elif st.session_state.login_state == "guest":
+    guest()

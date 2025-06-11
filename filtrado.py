@@ -133,9 +133,9 @@ def admin_login():
       return [movie for movie in all_movies if movie not in seen_movies]
 
   # Recomendación de películas
-  def recommend_movies(user_id, algo, n=10):
+  def recommend_movies(user_id, recommender_model, n=10):
       unseen = get_unseen_movies(user_id, ratings)
-      predictions = [algo.predict(user_id, movie_id) for movie_id in unseen]
+      predictions = [recommender_model.predict(user_id, movie_id) for movie_id in unseen]
       predictions.sort(key=lambda x: x.est, reverse=True)
       top_n = predictions[:n]
       result = pd.DataFrame([{
@@ -155,9 +155,9 @@ def admin_login():
       ]
       results = []
       for name in model_names:
-          algo = get_model(name)
-          algo.fit(trainset)
-          predictions = algo.test(testset)
+          recommender_model = get_model(name)
+          recommender_model.fit(trainset)
+          predictions = recommender_model.test(testset)
           rmse = accuracy.rmse(predictions, verbose=False)
           mae = accuracy.mae(predictions, verbose=False)
           results.append({"Model": name, "RMSE": rmse, "MAE": mae})
@@ -184,9 +184,9 @@ def admin_login():
     recomendar = st.button("🔍 Recomendar películas")
   if recomendar:
     with st.spinner("Entrenando modelo..."):
-      algo = get_model(selected_model)
-      algo.fit(trainset)
-      recommendations = recommend_movies(selected_user, algo)
+      recommender_model = get_model(selected_model)
+      recommender_model.fit(trainset)
+      recommendations = recommend_movies(selected_user, recommender_model)
     st.success(f"🎯 Recomendaciones para el usuario {selected_user} usando {selected_model}:")
     st.table(recommendations)
 
@@ -392,18 +392,18 @@ def guest():
       trainset = data.build_full_trainset()
 
       # Entrenar con SVD++
-      algo = SVDpp()
+      recommender_model = SVDpp()
       with st.spinner("Entrenando modelo por favor espera un momento..."):
-          algo.fit(trainset)
+          recommender_model.fit(trainset)
 
           def get_unseen_movies_guest():
               seen = guest_df['movieId'].tolist()
               all_movies = ratings['movieId'].unique()
               return [m for m in all_movies if m not in seen]
 
-          def recommend_guest(user_id, algo, n=10):
+          def recommend_guest(user_id, recommender_model, n=10):
               unseen = get_unseen_movies_guest()
-              predictions = [algo.predict(user_id, movie_id) for movie_id in unseen]
+              predictions = [recommender_model.predict(user_id, movie_id) for movie_id in unseen]
               predictions.sort(key=lambda x: x.est, reverse=True)
               top_n = predictions[:n]
               result = pd.DataFrame([{
@@ -413,7 +413,7 @@ def guest():
               result = result.merge(movies, on="movieId", how="left")[['title', 'Predicted Rating']]
               return result
 
-          recs = recommend_guest(999999, algo)
+          recs = recommend_guest(999999, recommender_model)
       st.table(recs)
       st.session_state.show_recommendations = False
 

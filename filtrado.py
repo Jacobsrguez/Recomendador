@@ -415,6 +415,7 @@ def guest():
 
           recs = recommend_guest(999999, algo)
       st.table(recs)
+      st.session_state.show_recommendations = False
 
 
 # Hay que asegurarse de que el estado de sesión está inicializado porque si no existe Streamlit lanza ese AttributeError

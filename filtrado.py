@@ -6,6 +6,7 @@ from surprise import Dataset, Reader, KNNBasic, SVD, BaselineOnly, SVDpp, NMF, K
 from surprise.model_selection import train_test_split
 from surprise import accuracy
 from urllib.parse import parse_qs
+import numpy as np
 
 # Cargar datasets
 ratings = pd.read_csv("ratings.csv")
@@ -51,6 +52,44 @@ def get_model(algorithm_name):
   else:
     return KNNBasic()
 
+
+def r2_score(predictions):
+  y_true = np.array([pred.r_ui for pred in predictions])
+  y_pred = np.array([pred.est for pred in predictions])
+  ss_res = np.sum((y_true - y_pred) ** 2)
+  ss_tot = np.sum((y_true - np.mean(y_true)) ** 2)
+  return 1 - ss_res / ss_tot
+  
+
+def precision_recall_at_k(predictions, k=10, threshold=4.0):
+  user_est_true = {}
+  for pred in predictions:
+      user_est_true.setdefault(pred.uid, []).append((pred.est, pred.r_ui))
+  
+  precisions = []
+  recalls = []
+
+  for uid, user_ratings in user_est_true.items():
+      user_ratings.sort(key=lambda x: x[0], reverse=True)
+      top_k = user_ratings[:k]
+      
+      n_rel = sum((true_r >= threshold) for (_, true_r) in user_ratings)
+      n_rec_k = sum((est >= threshold) for (est, _) in top_k)
+      n_rel_and_rec_k = sum(((true_r >= threshold) and (est >= threshold)) for (est, true_r) in top_k)
+      
+      precision = n_rel_and_rec_k / n_rec_k if n_rec_k != 0 else 0
+      recall = n_rel_and_rec_k / n_rel if n_rel != 0 else 0
+      
+      precisions.append(precision)
+      recalls.append(recall)
+  
+  return np.mean(precisions), np.mean(recalls)
+
+
+def f1_at_k(precision, recall):
+  if precision + recall == 0:
+      return 0
+  return 2 * (precision * recall) / (precision + recall)
 
 def mostrar_login():
   st.title("Inicio de Sesión")
@@ -158,9 +197,15 @@ def admin_login():
           recommender_model = get_model(name)
           recommender_model.fit(trainset)
           predictions = recommender_model.test(testset)
+
           rmse = accuracy.rmse(predictions, verbose=False)
           mae = accuracy.mae(predictions, verbose=False)
-          results.append({"Model": name, "RMSE": rmse, "MAE": mae})
+          r2 = r2_score(predictions)
+          precision, recall = precision_recall_at_k(predictions, k=10, threshold=4.0)
+          f1 = f1_at_k(precision, recall)
+
+
+          results.append({"Model": name, "RMSE": rmse, "MAE": mae, "R2": r2, "Precision@10": precision, "Recall@10": recall, "F1@10": f1})
       return pd.DataFrame(results)
 
 

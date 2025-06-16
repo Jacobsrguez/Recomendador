@@ -7,6 +7,7 @@ from surprise.model_selection import train_test_split
 from surprise import accuracy
 from urllib.parse import parse_qs
 import numpy as np
+import time
 
 # Cargar datasets
 ratings = pd.read_csv("ratings.csv")
@@ -195,9 +196,18 @@ def admin_login():
       results = []
       for name in model_names:
           recommender_model = get_model(name)
-          recommender_model.fit(trainset)
-          predictions = recommender_model.test(testset)
 
+          # Medir el tiempo de entrenamiento
+          start_time = time.time()
+          recommender_model.fit(trainset)
+          train_time = time.time() - start_time
+
+          # mediel el tiempo de predicción
+          start_test = time.time()
+          predictions = recommender_model.test(testset)
+          test_time = time.time() - start_test
+
+          # Metricas de evaluación
           rmse = accuracy.rmse(predictions, verbose=False)
           mae = accuracy.mae(predictions, verbose=False)
           r2 = r2_score(predictions)
@@ -205,7 +215,17 @@ def admin_login():
           f1 = f1_at_k(precision, recall)
 
 
-          results.append({"Model": name, "RMSE": rmse, "MAE": mae, "R2": r2, "Precision@10": precision, "Recall@10": recall, "F1@10": f1})
+          results.append({
+            "Model": name, 
+            "RMSE": rmse, 
+            "MAE": mae, 
+            "R2": r2,
+            "Precision@10": precision,
+            "Recall@10": recall,
+            "F1@10": f1,
+            "Train Time (s)": round(train_time, 2),
+            "Test Time (s)": round(test_time, 2)
+          })
       return pd.DataFrame(results)
 
 

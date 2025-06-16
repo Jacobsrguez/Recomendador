@@ -185,7 +185,7 @@ def admin_login():
       return result
 
   # Evaluar todos los modelos
-  def evaluate_models():
+  def evaluate_models(k_value):
       model_names = [
           "Item-Item (Cosine)", "User-User (Cosine)",
           "SVD", "SVD++", "NMF",
@@ -201,7 +201,7 @@ def admin_login():
           rmse = accuracy.rmse(predictions, verbose=False)
           mae = accuracy.mae(predictions, verbose=False)
           r2 = r2_score(predictions)
-          precision, recall = precision_recall_at_k(predictions, k=10, threshold=4.0)
+          precision, recall = precision_recall_at_k(predictions, k=k_value, threshold=4.0)
           f1 = f1_at_k(precision, recall)
 
 
@@ -236,10 +236,11 @@ def admin_login():
     st.table(recommendations)
 
   with col2:
+    k_value = st.sidebar.slider("🎯 Valor de K para Precision/Recall/F1@K", 1, 20, 10)
     evaluar = st.button("📊 Evaluar modelo")
   if evaluar:
     with st.spinner("Evaluando..."):
-      eval_df = evaluate_models()
+      eval_df = evaluate_models(k_value)
     st.subheader("📈 Comparación de modelos")
     st.dataframe(eval_df)
 
@@ -304,6 +305,77 @@ def admin_login():
       ax.text(bar.get_x() + bar.get_width() / 2, height + 0.01, f"{height:.3f}", ha='center', fontsize=10)
 
     st.pyplot(fig)
+
+    # Gráfico de Precision@10
+    st.subheader("🎯 Comparación de Modelos - Precision@10")
+    best_precision = eval_df["Precision@10"].max()
+    fig, ax = plt.subplots(figsize=(12, 6))
+    bars = ax.bar(eval_df["Model"], eval_df["Precision@10"], edgecolor="black")
+
+    for bar, value in zip(bars, eval_df["Precision@10"]):
+        if value == best_precision:
+            bar.set_color("orange")
+        else:
+            bar.set_color("lightblue")
+
+    ax.set_ylabel("Precision@10")
+    ax.set_title("Precision@10 por Modelo (más alto es mejor)")
+    ax.tick_params(axis='x', rotation=45)
+
+    for bar in bars:
+        height = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width()/2, height + 0.005, f"{height:.3f}", ha='center', fontsize=9)
+
+    st.pyplot(fig)
+
+
+    # Gráfico de Recall@10
+    st.subheader("🔍 Comparación de Modelos - Recall@10")
+
+    best_recall = eval_df["Recall@10"].max()
+    fig, ax = plt.subplots(figsize=(12, 6))
+    bars = ax.bar(eval_df["Model"], eval_df["Recall@10"], edgecolor="black")
+
+    for bar, value in zip(bars, eval_df["Recall@10"]):
+        if value == best_recall:
+            bar.set_color("purple")
+        else:
+            bar.set_color("lightgray")
+
+    ax.set_ylabel("Recall@10")
+    ax.set_title("Recall@10 por Modelo (más alto es mejor)")
+    ax.tick_params(axis='x', rotation=45)
+
+    for bar in bars:
+        height = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width()/2, height + 0.005, f"{height:.3f}", ha='center', fontsize=9)
+
+    st.pyplot(fig)
+
+    # Grafico de F1@10
+    st.subheader("🏅 Comparación de Modelos - F1@10")
+
+    best_f1 = eval_df["F1@10"].max()
+    fig, ax = plt.subplots(figsize=(12, 6))
+    bars = ax.bar(eval_df["Model"], eval_df["F1@10"], edgecolor="black")
+
+    for bar, value in zip(bars, eval_df["F1@10"]):
+        if value == best_f1:
+            bar.set_color("teal")
+        else:
+            bar.set_color("salmon")
+
+    ax.set_ylabel("F1@10")
+    ax.set_title("F1@10 por Modelo (más alto es mejor)")
+    ax.tick_params(axis='x', rotation=45)
+
+    for bar in bars:
+        height = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width()/2, height + 0.005, f"{height:.3f}", ha='center', fontsize=9)
+
+    st.pyplot(fig)
+
+
 
   # Análisis de distribución
   st.subheader("📈 Gráficas de Valoraciones")

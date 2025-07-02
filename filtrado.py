@@ -120,14 +120,9 @@ def mostrar_login():
 def admin_login():
   # INFO DEL DATASET -> Desplegable de la barra lateral
   st.sidebar.title("Información del Dataset")
-
-  # Número de usuarios únicos
   num_users = ratings['userId'].nunique()
-  # Número de películas únicas
   num_movies = ratings['movieId'].nunique()
-  # Número total de valoraciones
   num_ratings = ratings.shape[0]
-  # Número de categorías únicas (extraídas del campo 'genres')
   all_genres = movies['genres'].str.split('|').explode().unique()
   all_genres2 = [genre for genre in all_genres if genre != '(no genres listed)']
   num_genres = len(all_genres2)
@@ -138,7 +133,6 @@ def admin_login():
   st.sidebar.markdown(f"🏷️ **Categorías únicas:** {num_genres}")
   st.sidebar.markdown("📚 **Categorías:**")
   st.sidebar.write(", ".join(sorted(all_genres2)))
-
 
   # Selección de usuario para ver cuántas valoraciones ha hecho
   selected_user_info = st.sidebar.selectbox("🔍 Ver valoraciones de un usuario", sorted(ratings['userId'].unique()))
@@ -156,7 +150,7 @@ def admin_login():
   top_genres = genre_rating_avg.head(5).index.tolist()
   st.sidebar.markdown(f"🌟 **Géneros favoritos del usuario {selected_user_genres}:** {', '.join(top_genres)}")
 
-  st.sidebar.markdown("---")  # Separador visual
+  st.sidebar.markdown("---")
   cerrar = st.sidebar.button("🔴 Cerrar sesión")
 
   if cerrar:

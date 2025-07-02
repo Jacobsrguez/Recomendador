@@ -8,6 +8,8 @@ from surprise import accuracy
 from urllib.parse import parse_qs
 import numpy as np
 import time
+from surprise.model_selection import cross_validate
+
 
 # Cargar datasets
 ratings = pd.read_csv("ratings.csv")
@@ -92,6 +94,8 @@ def f1_at_k(precision, recall):
       return 0
   return 2 * (precision * recall) / (precision + recall)
 
+
+
 def mostrar_login():
   st.title("Inicio de Sesión")
   username = st.text_input("👤 Usuario")
@@ -109,13 +113,13 @@ def mostrar_login():
   with col2:
     if st.button("Acceder como invitado"):
       st.session_state.login_state = "guest"
-      st.info("🔓 Accediendo como invitado...")
+      st.info("Accediendo como invitado...")
       st.rerun()
   st.stop()
 
 def admin_login():
   # INFO DEL DATASET -> Desplegable de la barra lateral
-  st.sidebar.title("📊 Información del Dataset")
+  st.sidebar.title("Información del Dataset")
 
   # Número de usuarios únicos
   num_users = ratings['userId'].nunique()
@@ -166,11 +170,7 @@ def admin_login():
 
 
 
-  # Peliculas que no han sido vistas por un usuario
-  def get_unseen_movies(user_id, ratings_df):
-      seen_movies = ratings_df[ratings_df.userId == user_id]['movieId'].tolist()
-      all_movies = ratings_df['movieId'].unique()
-      return [movie for movie in all_movies if movie not in seen_movies]
+
 
   # Recomendación de películas
   def recommend_movies(user_id, recommender_model, n=10):
@@ -227,6 +227,24 @@ def admin_login():
             "Test Time (s)": round(test_time, 2)
           })
       return pd.DataFrame(results)
+  
+  def cross_validate_models():
+    models_to_check = {
+        "SVD": SVD(),
+        "KNNBasic": KNNBasic()
+    }
+
+    results = []
+    for name, model in models_to_check.items():
+        cv_results = cross_validate(model, data, measures=['RMSE', 'MAE'], cv=5, verbose=False)
+        results.append({
+            "Model": name,
+            "RMSE Mean": round(np.mean(cv_results['test_rmse']), 4),
+            "MAE Mean": round(np.mean(cv_results['test_mae']), 4),
+            "Fit Time (s)": round(np.mean(cv_results['fit_time']), 2),
+            "Test Time (s)": round(np.mean(cv_results['test_time']), 2)
+        })
+    return pd.DataFrame(results)
 
 
   # STREAMLIT INTERFAZ
@@ -258,6 +276,11 @@ def admin_login():
   with col2:
     k_value = st.sidebar.slider("🎯 Valor de K para Precision/Recall/F1@K", 1, 20, 10)
     evaluar = st.button("📊 Evaluar modelo")
+  if st.button("🧪 Validación Cruzada (K-Fold)"):
+    with st.spinner("Ejecutando cross-validation..."):
+      cv_df = cross_validate_models()
+    st.subheader("🧪 Resultados de Cross-Validation (5-Folds)")
+    st.dataframe(cv_df)
   if evaluar:
     with st.spinner("Evaluando..."):
       eval_df = evaluate_models(k_value)

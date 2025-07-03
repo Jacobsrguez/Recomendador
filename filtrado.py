@@ -163,7 +163,10 @@ def admin_login():
   trainset, testset = train_test_split(data, test_size=0.2, random_state=42)
 
 
-
+  def get_unseen_movies(user_id, ratings_df):
+    seen_movies = ratings_df[ratings_df.userId == user_id]['movieId'].tolist()
+    all_movies = ratings_df['movieId'].unique()
+    return [movie for movie in all_movies if movie not in seen_movies]
 
 
   # Recomendación de películas

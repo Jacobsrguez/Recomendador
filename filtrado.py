@@ -470,13 +470,13 @@ def guest():
     """,
     unsafe_allow_html=True
   )
-  st.title("👋 Bienvenido")
-  st.markdown(f"🎯 Has valorado **{valoradas} de {min_requeridas}** películas necesarias para obtener recomendaciones.")
+  st.title("Bienvenido")
+  st.markdown(f"Has valorado **{valoradas} de {min_requeridas}** películas necesarias para obtener recomendaciones.")
 
   # --- Mostrar película actual
   current_id = st.session_state.current_guest_movie
   movie_title = movies[movies['movieId'] == current_id]['title'].values[0]
-  st.subheader(f"🎬 ¿Has visto esta película?")
+  st.subheader(f"¿Has visto esta película?")
   st.markdown(f"**{movie_title}**")
 
   # --- Slider para puntuar
@@ -485,7 +485,7 @@ def guest():
   col1, col2 = st.columns(2)
 
   with col1:
-    if st.button("✅ Valorar"):
+    if st.button("Valorar"):
       # Guardar valoración
       st.session_state.guest_ratings.append({
         "userId": 999999,
@@ -499,12 +499,12 @@ def guest():
       if posibles:
         st.session_state.current_guest_movie = random.choice(posibles)
       else:
-        st.warning("🎉 Has valorado todas las películas de la lista.")
+        st.warning("Has valorado todas las películas de la lista.")
 
       st.rerun()
 
   with col2:
-    if st.button("🔄 Cambiar película"):
+    if st.button("Cambiar película"):
       top_movies = ratings['movieId'].value_counts().head(200).index.tolist()
       ya_vistas = [r["movieId"] for r in st.session_state.guest_ratings]
       posibles = [m for m in top_movies if m != current_id and m not in ya_vistas]
@@ -517,7 +517,7 @@ def guest():
   # --- Si ya valoró el mínimo, mostramos botón para ver recomendaciones
   if valoradas >= min_requeridas:
 
-    if st.button("🎯 Ver recomendaciones"):
+    if st.button("Ver recomendaciones"):
       st.session_state.show_recommendations = True
 
     if st.session_state.show_recommendations:  

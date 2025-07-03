@@ -127,20 +127,20 @@ def admin_login():
   all_genres2 = [genre for genre in all_genres if genre != '(no genres listed)']
   num_genres = len(all_genres2)
 
-  st.sidebar.markdown(f"👥 **Usuarios únicos:** {num_users}")
-  st.sidebar.markdown(f"🎞️ **Películas distintas:** {num_movies}")
-  st.sidebar.markdown(f"⭐ **Valoraciones totales:** {num_ratings}")
-  st.sidebar.markdown(f"🏷️ **Categorías únicas:** {num_genres}")
-  st.sidebar.markdown("📚 **Categorías:**")
+  st.sidebar.markdown(f"**Usuarios únicos:** {num_users}")
+  st.sidebar.markdown(f"**Películas distintas:** {num_movies}")
+  st.sidebar.markdown(f"**Valoraciones totales:** {num_ratings}")
+  st.sidebar.markdown(f"**Categorías únicas:** {num_genres}")
+  st.sidebar.markdown("**Categorías:**")
   st.sidebar.write(", ".join(sorted(all_genres2)))
 
   # Selección de usuario para ver cuántas valoraciones ha hecho
-  selected_user_info = st.sidebar.selectbox("🔍 Ver valoraciones de un usuario", sorted(ratings['userId'].unique()))
+  selected_user_info = st.sidebar.selectbox("Ver valoraciones de un usuario", sorted(ratings['userId'].unique()))
   user_ratings_count = ratings[ratings['userId'] == selected_user_info].shape[0]
-  st.sidebar.markdown(f"📝 **Valoraciones del usuario {selected_user_info}:** {user_ratings_count}")
+  st.sidebar.markdown(f"**Valoraciones del usuario {selected_user_info}:** {user_ratings_count}")
 
   # Selección de un usuario para ver sus generos favoritos
-  selected_user_genres = st.sidebar.selectbox("🔍 Ver géneros favoritos de un usuario", sorted(ratings['userId'].unique()))
+  selected_user_genres = st.sidebar.selectbox("Ver géneros favoritos de un usuario", sorted(ratings['userId'].unique()))
   user_rated = ratings[ratings['userId'] == selected_user_genres]
   user_genres = user_rated.merge(movies[['movieId', 'genres']], on='movieId')
   user_genres_exploded = user_genres.copy()
@@ -148,7 +148,7 @@ def admin_login():
   user_genres_exploded = user_genres_exploded.explode('genres')
   genre_rating_avg = user_genres_exploded.groupby('genres')['rating'].mean().sort_values(ascending=False)
   top_genres = genre_rating_avg.head(5).index.tolist()
-  st.sidebar.markdown(f"🌟 **Géneros favoritos del usuario {selected_user_genres}:** {', '.join(top_genres)}")
+  st.sidebar.markdown(f"**Géneros favoritos del usuario {selected_user_genres}:** {', '.join(top_genres)}")
 
   st.sidebar.markdown("---")
   cerrar = st.sidebar.button("🔴 Cerrar sesión")
@@ -245,7 +245,7 @@ def admin_login():
 
 
   # STREAMLIT INTERFAZ
-  st.title("🎬 Recomendador de Películas")
+  st.title("Recomendador de Películas")
 
   user_ids = sorted(ratings['userId'].unique())
   selected_user = st.selectbox("👤 Selecciona un usuario", user_ids)
@@ -257,34 +257,34 @@ def admin_login():
       "BaselineOnly", "NormalPredictor", "SlopeOne", "CoClustering"
   ]
 
-  selected_model = st.selectbox("🧠 Selecciona el algoritmo para recomendar", model_options)
+  selected_model = st.selectbox("Selecciona el algoritmo para recomendar", model_options)
 
   col1, col2 = st.columns(2)
   with col1:
-    recomendar = st.button("🔍 Recomendar películas")
+    recomendar = st.button("Recomendar películas")
   if recomendar:
     with st.spinner("Entrenando modelo..."):
       recommender_model = get_model(selected_model)
       recommender_model.fit(trainset)
       recommendations = recommend_movies(selected_user, recommender_model)
-    st.success(f"🎯 Recomendaciones para el usuario {selected_user} usando {selected_model}:")
+    st.success(f"Recomendaciones para el usuario {selected_user} usando {selected_model}:")
     st.table(recommendations)
 
   with col2:
-    k_value = st.sidebar.slider("🎯 Valor de K para Precision/Recall/F1@K", 1, 20, 10)
-    evaluar = st.button("📊 Evaluar modelo")
-  if st.button("🧪 Validación Cruzada (K-Fold)"):
+    k_value = st.sidebar.slider("Valor de K para Precision/Recall/F1@K", 1, 20, 10)
+    evaluar = st.button("Evaluar modelo")
+  if st.button("Validación Cruzada (K-Fold)"):
     with st.spinner("Ejecutando cross-validation..."):
       cv_df = cross_validate_models()
-    st.subheader("🧪 Resultados de Cross-Validation (5-Folds)")
+    st.subheader("Resultados de Cross-Validation (5-Folds)")
     st.dataframe(cv_df)
   if evaluar:
     with st.spinner("Evaluando..."):
       eval_df = evaluate_models(k_value)
-    st.subheader("📈 Comparación de modelos")
+    st.subheader("Comparación de modelos")
     st.dataframe(eval_df)
 
-    st.subheader("🔬 Comparación de Modelos - RMSE")
+    st.subheader("Comparación de Modelos - RMSE")
 
     best_rmse = eval_df["RMSE"].min()
     fig, ax = plt.subplots(figsize=(12, 6))
@@ -308,7 +308,7 @@ def admin_login():
 
 
     # Gráfico de MAE con color para el mejor modelo
-    st.subheader("🏅 Comparación de Modelos - MAE")
+    st.subheader("Comparación de Modelos - MAE")
 
     best_mae = eval_df["MAE"].min()
     fig, ax = plt.subplots(figsize=(12, 6))
@@ -331,7 +331,7 @@ def admin_login():
     st.pyplot(fig)
 
     # Gráfico de Precision@10
-    st.subheader("🎯 Comparación de Modelos - Precision@10")
+    st.subheader("Comparación de Modelos - Precision@10")
     best_precision = eval_df["Precision@10"].max()
     fig, ax = plt.subplots(figsize=(12, 6))
     bars = ax.bar(eval_df["Model"], eval_df["Precision@10"], edgecolor="black")
@@ -354,7 +354,7 @@ def admin_login():
 
 
     # Gráfico de Recall@10
-    st.subheader("🔍 Comparación de Modelos - Recall@10")
+    st.subheader("Comparación de Modelos - Recall@10")
 
     best_recall = eval_df["Recall@10"].max()
     fig, ax = plt.subplots(figsize=(12, 6))
@@ -377,7 +377,7 @@ def admin_login():
     st.pyplot(fig)
 
     # Grafico de F1@10
-    st.subheader("🏅 Comparación de Modelos - F1@10")
+    st.subheader("Comparación de Modelos - F1@10")
 
     best_f1 = eval_df["F1@10"].max()
     fig, ax = plt.subplots(figsize=(12, 6))
@@ -402,10 +402,10 @@ def admin_login():
 
 
   # Análisis de distribución
-  st.subheader("📈 Gráficas de Valoraciones")
+  st.subheader("Gráficas de Valoraciones")
   with st.expander("Mostrar/Ocultar Gráficas de Valoraciones"):
     # Histograma de valoraciones por usuario
-    st.subheader("👥 Valoraciones por Usuario")
+    st.subheader("Valoraciones por Usuario")
     st.caption("Distribución de valoraciones por usuario (usuarios con < 1000 valoraciones)")
     user_rating_counts = ratings.groupby('userId').size()
     filtered_user_ratings = user_rating_counts[user_rating_counts < 1000]
@@ -416,7 +416,7 @@ def admin_login():
     st.pyplot(fig)
 
     # Histograma de valoraciones por película
-    st.subheader("🎞️ Valoraciones por Película")
+    st.subheader("Valoraciones por Película")
     st.caption("Distribución de valoraciones por película (películas con < 100 valoraciones)")
     movie_rating_counts = ratings.groupby('movieId').size()
     filtered_movie_ratings = movie_rating_counts[movie_rating_counts < 100]

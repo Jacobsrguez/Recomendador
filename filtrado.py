@@ -227,7 +227,7 @@ def admin_login():
   
   def cross_validate_models():
     models_to_check = {
-        "SVD": SVD(),
+        "SVD++": SVDpp(),
         "KNNBasic": KNNBasic()
     }
 
@@ -248,7 +248,7 @@ def admin_login():
   st.title("Recomendador de Películas")
 
   user_ids = sorted(ratings['userId'].unique())
-  selected_user = st.selectbox("👤 Selecciona un usuario", user_ids)
+  selected_user = st.selectbox("Selecciona un usuario", user_ids)
 
   model_options = [
       "Item-Item (Cosine)", "User-User (Cosine)",

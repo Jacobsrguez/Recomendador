@@ -365,7 +365,7 @@ def admin_login():
 
 
     # Gráfico de Recall@10
-    st.subheader("
+    st.subheader("Comparación de Modelos - Recall@10")
     best_recall = eval_df["Recall@10"].max()
     fig, ax = plt.subplots(figsize=(12, 6))
     bars = ax.bar(eval_df["Model"], eval_df["Recall@10"], edgecolor="black")

@@ -13,6 +13,8 @@ from surprise.model_selection import cross_validate
 
 # Cargar datasets
 ratings = pd.read_csv("ratings.csv")
+# Esto es para reducir el tamaño del dataset y dejarlo con 25000 valoraciones.
+## ratings = ratings.sample(frac=0.25, random_state=42).reset_index(drop=True)
 movies = pd.read_csv("movies.csv")
 
 # Verificamos si se solicitó volver al login desde el botón HTML

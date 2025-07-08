@@ -24,9 +24,11 @@ if "volver_login" in query_params:
   st.session_state.guest_ratings = []
   st.experimental_rerun()
 
+# Creedenciales de administrador
 ADMIN_USER = "admin"
 ADMIN_PASS = "1234"
 
+# Función para obtener el modelo basado en el nombre del algoritmo
 def get_model(algorithm_name):
   if algorithm_name == "Item-Item (Cosine)":
     return KNNBasic(sim_options={'name': 'cosine', 'user_based': False})
@@ -48,8 +50,6 @@ def get_model(algorithm_name):
     return KNNBaseline()
   elif algorithm_name == "BaselineOnly":
     return BaselineOnly()
-  elif algorithm_name == "NormalPredictor":
-    return NormalPredictor()
   elif algorithm_name == "SlopeOne":
     return SlopeOne()
   elif algorithm_name == "CoClustering":

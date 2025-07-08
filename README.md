@@ -20,13 +20,18 @@ Se ha utilizado el **conjunto de datos público [MovieLens](https://grouplens.or
 
 ---
 
-## ⚙️ Tecnologías y Algoritmos (próximamente)
+## ⚙️ Tecnologías y Algoritmos
 
-- Filtrado colaborativo basado en usuarios
-- Filtrado colaborativo basado en ítems
-- Modelos de factorización matricial
-- Métricas de evaluación: RMSE, MAE, precisión, recall
-- Análisis cualitativo con usuarios
+- **Surprise** como motor de recomendación
+- **Streamlit** como interfaz gráfica
+- **Filtrado colaborativo basado en usuarios** (User-User)
+- **Filtrado colaborativo basado en ítems** (Item-Item)
+- **Modelos de factorización matricial**: SVD, SVD++, NMF
+- **Modelos alternativos**: KNNBasic, KNNWithMeans, KNNWithZScore, KNNBaseline, BaselineOnly, SlopeOne, CoClustering
+- **Métricas de evaluación**: RMSE, MAE, R², Precision@K, Recall@K, F1@K
+- **Validación cruzada (K-Fold)** para comparar el rendimiento de modelos
+- **Análisis exploratorio de usuarios y películas**: valoraciones, géneros favoritos, actividad por usuario
+- **Modo invitado** con sistema de recomendaciones personalizado
 
 ---
 

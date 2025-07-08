@@ -43,7 +43,7 @@ Este proyecto es de carácter académico y de libre uso para fines educativos.
 
 ## 💻 Instrucciones 
 
-Para ejecutar el codigo, ejecute
+Para ejecutar el codigo, ejecute  
 streamlit run filtrado.py
 
 

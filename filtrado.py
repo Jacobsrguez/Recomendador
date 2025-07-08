@@ -14,7 +14,7 @@ from surprise.model_selection import cross_validate
 # Cargar datasets
 ratings = pd.read_csv("ratings.csv")
 # Esto es para reducir el tamaño del dataset y dejarlo con 25000 valoraciones.
-## ratings = ratings.sample(frac=0.25, random_state=42).reset_index(drop=True)
+ratings = ratings.sample(frac=0.25, random_state=42).reset_index(drop=True)
 movies = pd.read_csv("movies.csv")
 
 # Verificamos si se solicitó volver al login desde el botón HTML
@@ -71,38 +71,38 @@ def precision_recall_at_k(predictions, k=10, threshold=4.0):
   user_est_true = {}
   # Agrupa las predicciones por usuario
   for pred in predictions:
-      user_est_true.setdefault(pred.uid, []).append((pred.est, pred.r_ui))
+    user_est_true.setdefault(pred.uid, []).append((pred.est, pred.r_ui))
   
   precisions = []
   recalls = []
 
   # Calcula Precision y Recall para cada usuario
   for uid, user_ratings in user_est_true.items():
-      # Ordena las predicciones por el valor estimado de mayor a menor
-      user_ratings.sort(key=lambda x: x[0], reverse=True)
-      top_k = user_ratings[:k]
-      
-      # Numero de items revelantes para el usuario
-      n_rel = sum((true_r >= threshold) for (_, true_r) in user_ratings)
-      # Numero de items recomendados
-      n_rec_k = sum((est >= threshold) for (est, _) in top_k)
+    # Ordena las predicciones por el valor estimado de mayor a menor
+    user_ratings.sort(key=lambda x: x[0], reverse=True)
+    top_k = user_ratings[:k]
+    
+    # Numero de items revelantes para el usuario
+    n_rel = sum((true_r >= threshold) for (_, true_r) in user_ratings)
+    # Numero de items recomendados
+    n_rec_k = sum((est >= threshold) for (est, _) in top_k)
 
-      # Numero de items relevantes y recomendados
-      n_rel_and_rec_k = sum(((true_r >= threshold) and (est >= threshold)) for (est, true_r) in top_k)
-      
-      # Calcula Precision y Recall
-      precision = n_rel_and_rec_k / n_rec_k if n_rec_k != 0 else 0
-      recall = n_rel_and_rec_k / n_rel if n_rel != 0 else 0
-      
-      precisions.append(precision)
-      recalls.append(recall)
+    # Numero de items relevantes y recomendados
+    n_rel_and_rec_k = sum(((true_r >= threshold) and (est >= threshold)) for (est, true_r) in top_k)
+    
+    # Calcula Precision y Recall
+    precision = n_rel_and_rec_k / n_rec_k if n_rec_k != 0 else 0
+    recall = n_rel_and_rec_k / n_rel if n_rel != 0 else 0
+    
+    precisions.append(precision)
+    recalls.append(recall)
   
   return np.mean(precisions), np.mean(recalls)
 
 # Función para calcular F1
 def f1_at_k(precision, recall):
   if precision + recall == 0:
-      return 0
+    return 0
   return 2 * (precision * recall) / (precision + recall)
 
 # Función para mostrar el formulario de inicio de sesión
@@ -182,82 +182,80 @@ def admin_login():
 
   # Recomendación de películas usando el modelo seleccionado
   def recommend_movies(user_id, recommender_model, n=10):
-      unseen = get_unseen_movies(user_id, ratings)
-      predictions = [recommender_model.predict(user_id, movie_id) for movie_id in unseen]
-      predictions.sort(key=lambda x: x.est, reverse=True)
-      top_n = predictions[:n]
-      # Crea un DataFrame con los IDs y calificaciones predichas redondeadas
-      result = pd.DataFrame([{
-          "movieId": pred.iid,
-          "Predicted Rating": round(pred.est, 2)
-      } for pred in top_n])
-        # Une con el DataFrame de películas para obtener los títulos
-      result = result.merge(movies, on="movieId", how="left")[['title', 'Predicted Rating']]
-      return result
+    unseen = get_unseen_movies(user_id, ratings)
+    predictions = [recommender_model.predict(user_id, movie_id) for movie_id in unseen]
+    predictions.sort(key=lambda x: x.est, reverse=True)
+    top_n = predictions[:n]
+    # Crea un DataFrame con los IDs y calificaciones predichas redondeadas
+    result = pd.DataFrame([{
+      "movieId": pred.iid,
+      "Predicted Rating": round(pred.est, 2)
+    } for pred in top_n])
+      # Une con el DataFrame de películas para obtener los títulos
+    result = result.merge(movies, on="movieId", how="left")[['title', 'Predicted Rating']]
+    return result
 
   # Evaluar todos los modelos
   def evaluate_models(k_value):
-      model_names = [
-          "Item-Item (Cosine)", "User-User (Cosine)",
-          "SVD", "SVD++", "NMF",
-          "KNNBasic", "KNNWithMeans", "KNNWithZScore", "KNNBaseline",
-          "BaselineOnly", "NormalPredictor", "SlopeOne", "CoClustering"
-      ]
-      results = []
-      for name in model_names:
-          recommender_model = get_model(name)
+    model_names = [
+      "Item-Item (Cosine)", "User-User (Cosine)",
+      "SVD", "SVD++", "NMF",
+      "KNNBasic", "KNNWithMeans", "KNNWithZScore", "KNNBaseline",
+      "BaselineOnly", "NormalPredictor", "SlopeOne", "CoClustering"
+    ]
+    results = []
+    for name in model_names:
+      recommender_model = get_model(name)
 
-          # Medir el tiempo de entrenamiento
-          start_time = time.time()
-          recommender_model.fit(trainset)
-          train_time = time.time() - start_time
+      # Medir el tiempo de entrenamiento
+      start_time = time.time()
+      recommender_model.fit(trainset)
+      train_time = time.time() - start_time
 
-          # mediel el tiempo de predicción
-          start_test = time.time()
-          predictions = recommender_model.test(testset)
-          test_time = time.time() - start_test
+      # mediel el tiempo de predicción
+      start_test = time.time()
+      predictions = recommender_model.test(testset)
+      test_time = time.time() - start_test
 
-          # Metricas de evaluación
-          rmse = accuracy.rmse(predictions, verbose=False)
-          mae = accuracy.mae(predictions, verbose=False)
-          r2 = r2_score(predictions)
-          precision, recall = precision_recall_at_k(predictions, k=k_value, threshold=4.0)
-          f1 = f1_at_k(precision, recall)
-
-
-          results.append({
-            "Model": name, 
-            "RMSE": rmse, 
-            "MAE": mae, 
-            "R2": r2,
-            "Precision@10": precision,
-            "Recall@10": recall,
-            "F1@10": f1,
-            "Train Time (s)": round(train_time, 2),
-            "Test Time (s)": round(test_time, 2)
-          })
-      return pd.DataFrame(results)
+      # Metricas de evaluación
+      rmse = accuracy.rmse(predictions, verbose=False)
+      mae = accuracy.mae(predictions, verbose=False)
+      r2 = r2_score(predictions)
+      precision, recall = precision_recall_at_k(predictions, k=k_value, threshold=4.0)
+      f1 = f1_at_k(precision, recall)
+      results.append({
+        "Model": name, 
+        "RMSE": rmse, 
+        "MAE": mae, 
+        "R2": r2,
+        "Precision@10": precision,
+        "Recall@10": recall,
+        "F1@10": f1,
+        "Train Time (s)": round(train_time, 2),
+        "Test Time (s)": round(test_time, 2)
+      })
+    return pd.DataFrame(results)
 
   # Función para realizar validación cruzada de los modelos
   def cross_validate_models():
     # Definir los modelos a evaluar
     models_to_check = {
-        "SVD++": SVDpp(),
-        "KNNBasic": KNNBasic()
+      "SVD++": SVDpp(),
+      "KNNBasic": KNNBasic()
     }
 
     results = []
     # Evaluar cada modelo usando validación cruzada
     for name, model in models_to_check.items():
-        cv_results = cross_validate(model, data, measures=['RMSE', 'MAE'], cv=5, verbose=False)
-        # Almacenar los resultados
-        results.append({
-            "Model": name,
-            "RMSE Mean": round(np.mean(cv_results['test_rmse']), 4),
-            "MAE Mean": round(np.mean(cv_results['test_mae']), 4),
-            "Fit Time (s)": round(np.mean(cv_results['fit_time']), 2),
-            "Test Time (s)": round(np.mean(cv_results['test_time']), 2)
-        })
+      cv_results = cross_validate(model, data, measures=['RMSE', 'MAE'], cv=5, verbose=False)
+      # Almacenar los resultados
+      results.append({
+          "Model": name,
+          "RMSE Mean": round(np.mean(cv_results['test_rmse']), 4),
+          "MAE Mean": round(np.mean(cv_results['test_mae']), 4),
+          "Fit Time (s)": round(np.mean(cv_results['fit_time']), 2),
+          "Test Time (s)": round(np.mean(cv_results['test_time']), 2)
+      })
     # Convertir los resultados a un DataFrame
     return pd.DataFrame(results)
 
@@ -270,10 +268,10 @@ def admin_login():
   selected_user = st.selectbox("Selecciona un usuario", user_ids)
 
   model_options = [
-      "Item-Item (Cosine)", "User-User (Cosine)",
-      "SVD", "SVD++", "NMF",
-      "KNNBasic", "KNNWithMeans", "KNNWithZScore", "KNNBaseline",
-      "BaselineOnly", "NormalPredictor", "SlopeOne", "CoClustering"
+    "Item-Item (Cosine)", "User-User (Cosine)",
+    "SVD", "SVD++", "NMF",
+    "KNNBasic", "KNNWithMeans", "KNNWithZScore", "KNNBaseline",
+    "BaselineOnly", "NormalPredictor", "SlopeOne", "CoClustering"
   ]
 
   selected_model = st.selectbox("Selecciona el algoritmo para recomendar", model_options)
@@ -351,16 +349,16 @@ def admin_login():
     fig, ax = plt.subplots(figsize=(12, 6))
     bars = ax.bar(eval_df["Model"], eval_df["Precision@10"], edgecolor="black")
     for bar, value in zip(bars, eval_df["Precision@10"]):
-        if value == best_precision:
-            bar.set_color("orange")
-        else:
-            bar.set_color("lightblue")
+      if value == best_precision:
+        bar.set_color("orange")
+      else:
+        bar.set_color("lightblue")
     ax.set_ylabel("Precision@10")
     ax.set_title("Precision@10 por Modelo (más alto es mejor)")
     ax.tick_params(axis='x', rotation=45)
     for bar in bars:
-        height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2, height + 0.005, f"{height:.3f}", ha='center', fontsize=9)
+      height = bar.get_height()
+      ax.text(bar.get_x() + bar.get_width()/2, height + 0.005, f"{height:.3f}", ha='center', fontsize=9)
     st.pyplot(fig)
 
 
@@ -370,16 +368,16 @@ def admin_login():
     fig, ax = plt.subplots(figsize=(12, 6))
     bars = ax.bar(eval_df["Model"], eval_df["Recall@10"], edgecolor="black")
     for bar, value in zip(bars, eval_df["Recall@10"]):
-        if value == best_recall:
-            bar.set_color("purple")
-        else:
-            bar.set_color("lightgray")
+      if value == best_recall:
+        bar.set_color("purple")
+      else:
+        bar.set_color("lightgray")
     ax.set_ylabel("Recall@10")
     ax.set_title("Recall@10 por Modelo (más alto es mejor)")
     ax.tick_params(axis='x', rotation=45)
     for bar in bars:
-        height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2, height + 0.005, f"{height:.3f}", ha='center', fontsize=9)
+      height = bar.get_height()
+      ax.text(bar.get_x() + bar.get_width()/2, height + 0.005, f"{height:.3f}", ha='center', fontsize=9)
     st.pyplot(fig)
 
     # Grafico de F1@10
@@ -388,16 +386,16 @@ def admin_login():
     fig, ax = plt.subplots(figsize=(12, 6))
     bars = ax.bar(eval_df["Model"], eval_df["F1@10"], edgecolor="black")
     for bar, value in zip(bars, eval_df["F1@10"]):
-        if value == best_f1:
-            bar.set_color("teal")
-        else:
-            bar.set_color("salmon")
+      if value == best_f1:
+        bar.set_color("teal")
+      else:
+        bar.set_color("salmon")
     ax.set_ylabel("F1@10")
     ax.set_title("F1@10 por Modelo (más alto es mejor)")
     ax.tick_params(axis='x', rotation=45)
     for bar in bars:
-        height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2, height + 0.005, f"{height:.3f}", ha='center', fontsize=9)
+      height = bar.get_height()
+      ax.text(bar.get_x() + bar.get_width()/2, height + 0.005, f"{height:.3f}", ha='center', fontsize=9)
     st.pyplot(fig)
 
 
@@ -539,28 +537,28 @@ def guest():
       # Entrenar con el modelo escogido
       recommender_model = SVDpp()
       with st.spinner("Entrenando modelo por favor espera un momento..."):
-          recommender_model.fit(trainset)
+        recommender_model.fit(trainset)
 
-          # Pelicula no vostas
-          def get_unseen_movies_guest():
-              seen = guest_df['movieId'].tolist()
-              all_movies = ratings['movieId'].unique()
-              return [m for m in all_movies if m not in seen]
+        # Pelicula no vostas
+        def get_unseen_movies_guest():
+          seen = guest_df['movieId'].tolist()
+          all_movies = ratings['movieId'].unique()
+          return [m for m in all_movies if m not in seen]
 
-          # Generar las recomendaciones para el invitado
-          def recommend_guest(user_id, recommender_model, n=10):
-              unseen = get_unseen_movies_guest()
-              predictions = [recommender_model.predict(user_id, movie_id) for movie_id in unseen]
-              predictions.sort(key=lambda x: x.est, reverse=True)
-              top_n = predictions[:n]
-              result = pd.DataFrame([{
-                  "movieId": pred.iid,
-                  "Predicted Rating": round(pred.est, 2)
-              } for pred in top_n])
-              result = result.merge(movies, on="movieId", how="left")[['title', 'Predicted Rating']]
-              return result
+        # Generar las recomendaciones para el invitado
+        def recommend_guest(user_id, recommender_model, n=10):
+          unseen = get_unseen_movies_guest()
+          predictions = [recommender_model.predict(user_id, movie_id) for movie_id in unseen]
+          predictions.sort(key=lambda x: x.est, reverse=True)
+          top_n = predictions[:n]
+          result = pd.DataFrame([{
+            "movieId": pred.iid,
+            "Predicted Rating": round(pred.est, 2)
+          } for pred in top_n])
+          result = result.merge(movies, on="movieId", how="left")[['title', 'Predicted Rating']]
+          return result
 
-          recs = recommend_guest(999999, recommender_model)
+        recs = recommend_guest(999999, recommender_model)
       st.table(recs)
       st.session_state.show_recommendations = False
 

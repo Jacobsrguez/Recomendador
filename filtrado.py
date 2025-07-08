@@ -58,6 +58,7 @@ def get_model(algorithm_name):
     return KNNBasic()
 
 
+# Función para calcular R2 score
 def r2_score(predictions):
   y_true = np.array([pred.r_ui for pred in predictions])
   y_pred = np.array([pred.est for pred in predictions])
@@ -65,23 +66,31 @@ def r2_score(predictions):
   ss_tot = np.sum((y_true - np.mean(y_true)) ** 2)
   return 1 - ss_res / ss_tot
   
-
+# Función para calcular Precision y Recall en k
 def precision_recall_at_k(predictions, k=10, threshold=4.0):
   user_est_true = {}
+  # Agrupa las predicciones por usuario
   for pred in predictions:
       user_est_true.setdefault(pred.uid, []).append((pred.est, pred.r_ui))
   
   precisions = []
   recalls = []
 
+  # Calcula Precision y Recall para cada usuario
   for uid, user_ratings in user_est_true.items():
+      # Ordena las predicciones por el valor estimado de mayor a menor
       user_ratings.sort(key=lambda x: x[0], reverse=True)
       top_k = user_ratings[:k]
       
+      # Numero de items revelantes para el usuario
       n_rel = sum((true_r >= threshold) for (_, true_r) in user_ratings)
+      # Numero de items recomendados
       n_rec_k = sum((est >= threshold) for (est, _) in top_k)
+
+      # Numero de items relevantes y recomendados
       n_rel_and_rec_k = sum(((true_r >= threshold) and (est >= threshold)) for (est, true_r) in top_k)
       
+      # Calcula Precision y Recall
       precision = n_rel_and_rec_k / n_rec_k if n_rec_k != 0 else 0
       recall = n_rel_and_rec_k / n_rel if n_rel != 0 else 0
       
@@ -90,14 +99,13 @@ def precision_recall_at_k(predictions, k=10, threshold=4.0):
   
   return np.mean(precisions), np.mean(recalls)
 
-
+# Función para calcular F1
 def f1_at_k(precision, recall):
   if precision + recall == 0:
       return 0
   return 2 * (precision * recall) / (precision + recall)
 
-
-
+# Función para mostrar el formulario de inicio de sesión
 def mostrar_login():
   st.title("Inicio de Sesión")
   username = st.text_input("👤 Usuario")
@@ -119,6 +127,7 @@ def mostrar_login():
       st.rerun()
   st.stop()
 
+# Función que contiene la lógica del administrador
 def admin_login():
   # INFO DEL DATASET -> Desplegable de la barra lateral
   st.sidebar.title("Información del Dataset")
@@ -164,23 +173,25 @@ def admin_login():
   data = Dataset.load_from_df(ratings[['userId', 'movieId', 'rating']], reader)
   trainset, testset = train_test_split(data, test_size=0.2, random_state=42)
 
-
+  # Función para obtener las películas que el usuario no ha visto
   def get_unseen_movies(user_id, ratings_df):
     seen_movies = ratings_df[ratings_df.userId == user_id]['movieId'].tolist()
     all_movies = ratings_df['movieId'].unique()
     return [movie for movie in all_movies if movie not in seen_movies]
 
 
-  # Recomendación de películas
+  # Recomendación de películas usando el modelo seleccionado
   def recommend_movies(user_id, recommender_model, n=10):
       unseen = get_unseen_movies(user_id, ratings)
       predictions = [recommender_model.predict(user_id, movie_id) for movie_id in unseen]
       predictions.sort(key=lambda x: x.est, reverse=True)
       top_n = predictions[:n]
+      # Crea un DataFrame con los IDs y calificaciones predichas redondeadas
       result = pd.DataFrame([{
           "movieId": pred.iid,
           "Predicted Rating": round(pred.est, 2)
       } for pred in top_n])
+        # Une con el DataFrame de películas para obtener los títulos
       result = result.merge(movies, on="movieId", how="left")[['title', 'Predicted Rating']]
       return result
 
@@ -226,16 +237,20 @@ def admin_login():
             "Test Time (s)": round(test_time, 2)
           })
       return pd.DataFrame(results)
-  
+
+  # Función para realizar validación cruzada de los modelos
   def cross_validate_models():
+    # Definir los modelos a evaluar
     models_to_check = {
         "SVD++": SVDpp(),
         "KNNBasic": KNNBasic()
     }
 
     results = []
+    # Evaluar cada modelo usando validación cruzada
     for name, model in models_to_check.items():
         cv_results = cross_validate(model, data, measures=['RMSE', 'MAE'], cv=5, verbose=False)
+        # Almacenar los resultados
         results.append({
             "Model": name,
             "RMSE Mean": round(np.mean(cv_results['test_rmse']), 4),
@@ -243,12 +258,14 @@ def admin_login():
             "Fit Time (s)": round(np.mean(cv_results['fit_time']), 2),
             "Test Time (s)": round(np.mean(cv_results['test_time']), 2)
         })
+    # Convertir los resultados a un DataFrame
     return pd.DataFrame(results)
 
 
   # STREAMLIT INTERFAZ
   st.title("Recomendador de Películas")
 
+  # Selección de usuario y modelo
   user_ids = sorted(ratings['userId'].unique())
   selected_user = st.selectbox("Selecciona un usuario", user_ids)
 
@@ -275,61 +292,57 @@ def admin_login():
   with col2:
     k_value = st.sidebar.slider("Valor de K para Precision/Recall/F1@K", 1, 20, 10)
     evaluar = st.button("Evaluar modelo")
+  # Validación cruzada
   if st.button("Validación Cruzada (K-Fold)"):
     with st.spinner("Ejecutando cross-validation..."):
       cv_df = cross_validate_models()
     st.subheader("Resultados de Cross-Validation (5-Folds)")
     st.dataframe(cv_df)
+
+  # Evaluación de modelos
   if evaluar:
     with st.spinner("Evaluando..."):
       eval_df = evaluate_models(k_value)
     st.subheader("Comparación de modelos")
     st.dataframe(eval_df)
 
+    ## --- VISUALIZACIÓN DE RESULTADOS ---
+    # Gráfico de RMSE
     st.subheader("Comparación de Modelos - RMSE")
-
     best_rmse = eval_df["RMSE"].min()
     fig, ax = plt.subplots(figsize=(12, 6))
     bars = ax.bar(eval_df["Model"], eval_df["RMSE"], edgecolor="black")
-
     # Colorear el mejor modelo
     for bar, value in zip(bars, eval_df["RMSE"]):
       if value == best_rmse:
         bar.set_color("gold")
       else:
         bar.set_color("skyblue")
-
     ax.set_ylabel("RMSE")
     ax.set_title("RMSE por Modelo (más bajo es mejor)")
     ax.tick_params(axis='x', rotation=45)
     for bar in bars:
       height = bar.get_height()
       ax.text(bar.get_x() + bar.get_width()/2, height + 0.005, f"{height:.3f}", ha='center', fontsize=9)
-
     st.pyplot(fig)
-
 
     # Gráfico de MAE con color para el mejor modelo
     st.subheader("Comparación de Modelos - MAE")
-
     best_mae = eval_df["MAE"].min()
     fig, ax = plt.subplots(figsize=(12, 6))
     bars = ax.bar(eval_df["Model"], eval_df["MAE"], edgecolor="black")
-
     # Colorear el mejor modelo
     for bar, value in zip(bars, eval_df["MAE"]):
       if value == best_mae:
         bar.set_color("limegreen")
       else:
         bar.set_color("lightcoral")
-
     ax.set_ylabel("MAE")
     ax.set_title("MAE por Modelo (más bajo es mejor)")
     ax.tick_params(axis='x', rotation=45)
     for bar in bars:
       height = bar.get_height()
       ax.text(bar.get_x() + bar.get_width()/2, height + 0.005, f"{height:.3f}", ha='center', fontsize=9)
-
     st.pyplot(fig)
 
     # Gráfico de Precision@10
@@ -337,75 +350,61 @@ def admin_login():
     best_precision = eval_df["Precision@10"].max()
     fig, ax = plt.subplots(figsize=(12, 6))
     bars = ax.bar(eval_df["Model"], eval_df["Precision@10"], edgecolor="black")
-
     for bar, value in zip(bars, eval_df["Precision@10"]):
         if value == best_precision:
             bar.set_color("orange")
         else:
             bar.set_color("lightblue")
-
     ax.set_ylabel("Precision@10")
     ax.set_title("Precision@10 por Modelo (más alto es mejor)")
     ax.tick_params(axis='x', rotation=45)
-
     for bar in bars:
         height = bar.get_height()
         ax.text(bar.get_x() + bar.get_width()/2, height + 0.005, f"{height:.3f}", ha='center', fontsize=9)
-
     st.pyplot(fig)
 
 
     # Gráfico de Recall@10
-    st.subheader("Comparación de Modelos - Recall@10")
-
+    st.subheader("
     best_recall = eval_df["Recall@10"].max()
     fig, ax = plt.subplots(figsize=(12, 6))
     bars = ax.bar(eval_df["Model"], eval_df["Recall@10"], edgecolor="black")
-
     for bar, value in zip(bars, eval_df["Recall@10"]):
         if value == best_recall:
             bar.set_color("purple")
         else:
             bar.set_color("lightgray")
-
     ax.set_ylabel("Recall@10")
     ax.set_title("Recall@10 por Modelo (más alto es mejor)")
     ax.tick_params(axis='x', rotation=45)
-
     for bar in bars:
         height = bar.get_height()
         ax.text(bar.get_x() + bar.get_width()/2, height + 0.005, f"{height:.3f}", ha='center', fontsize=9)
-
     st.pyplot(fig)
 
     # Grafico de F1@10
     st.subheader("Comparación de Modelos - F1@10")
-
     best_f1 = eval_df["F1@10"].max()
     fig, ax = plt.subplots(figsize=(12, 6))
     bars = ax.bar(eval_df["Model"], eval_df["F1@10"], edgecolor="black")
-
     for bar, value in zip(bars, eval_df["F1@10"]):
         if value == best_f1:
             bar.set_color("teal")
         else:
             bar.set_color("salmon")
-
     ax.set_ylabel("F1@10")
     ax.set_title("F1@10 por Modelo (más alto es mejor)")
     ax.tick_params(axis='x', rotation=45)
-
     for bar in bars:
         height = bar.get_height()
         ax.text(bar.get_x() + bar.get_width()/2, height + 0.005, f"{height:.3f}", ha='center', fontsize=9)
-
     st.pyplot(fig)
 
 
-
-  # Análisis de distribución
+  # ----- Análisis de distribución ------ 
   st.subheader("Gráficas de Valoraciones")
   with st.expander("Mostrar/Ocultar Gráficas de Valoraciones"):
+
     # Histograma de valoraciones por usuario
     st.subheader("Valoraciones por Usuario")
     st.caption("Distribución de valoraciones por usuario (usuarios con < 1000 valoraciones)")
@@ -428,6 +427,7 @@ def admin_login():
     ax.set_ylabel("Cantidad de películas")
     st.pyplot(fig)
 
+  # ----- Análisis de usuarios y películas más activos ------
 
   st.subheader("👑 Top 5 Usuarios Más Activos")
   top_users = ratings['userId'].value_counts().head(5).reset_index()
@@ -442,11 +442,12 @@ def admin_login():
 
 
 def guest():
-  # --- Inicializar estado si es necesario
+  # Inicializar estado si es la primera vez que se accede
   if "guest_ratings" not in st.session_state:
     st.session_state.guest_ratings = []
 
   if "current_guest_movie" not in st.session_state:
+    # Elegir una película aleatoria de las más valoradas
     top_movies = ratings['movieId'].value_counts().head(200).index.tolist()
     st.session_state.current_guest_movie = random.choice(top_movies)
 
@@ -454,6 +455,7 @@ def guest():
   valoradas = len(st.session_state.guest_ratings)
   min_requeridas = 5
 
+  # Botón para volver al login
   st.markdown(
     """
     <div style="display: flex; justify-content: flex-end;">
@@ -475,17 +477,17 @@ def guest():
   st.title("Bienvenido")
   st.markdown(f"Has valorado **{valoradas} de {min_requeridas}** películas necesarias para obtener recomendaciones.")
 
-  # --- Mostrar película actual
+  # Mostrar película actual
   current_id = st.session_state.current_guest_movie
   movie_title = movies[movies['movieId'] == current_id]['title'].values[0]
   st.subheader(f"¿Has visto esta película?")
   st.markdown(f"**{movie_title}**")
 
-  # --- Slider para puntuar
+  # Slider para puntuar
   rating = st.slider("⭐ Valora esta película", 0.5, 5.0, 3.0, step=0.5)
-
   col1, col2 = st.columns(2)
 
+  # Botones para valorar o cambiar película
   with col1:
     if st.button("Valorar"):
       # Guardar valoración
@@ -494,7 +496,7 @@ def guest():
         "movieId": current_id,
         "rating": rating
       })
-      # Elegir nueva película
+      # Elegir nueva película que no haya sido valorada
       top_movies = ratings['movieId'].value_counts().head(200).index.tolist()
       ya_vistas = [r["movieId"] for r in st.session_state.guest_ratings]
       posibles = [m for m in top_movies if m not in ya_vistas]
@@ -502,9 +504,9 @@ def guest():
         st.session_state.current_guest_movie = random.choice(posibles)
       else:
         st.warning("Has valorado todas las películas de la lista.")
-
       st.rerun()
 
+  # Botón para cambiar película sin valorar
   with col2:
     if st.button("Cambiar película"):
       top_movies = ratings['movieId'].value_counts().head(200).index.tolist()
@@ -518,32 +520,34 @@ def guest():
 
   # --- Si ya valoró el mínimo, mostramos botón para ver recomendaciones
   if valoradas >= min_requeridas:
-
     if st.button("Ver recomendaciones"):
       st.session_state.show_recommendations = True
 
     if st.session_state.show_recommendations:  
-      # --- Mostrar recomendaciones si el invitado ya completó las valoraciones ---
       st.success("Listo!. Aquí están tus recomendaciones")
+      # Convertir las valoraciones del invitado a un DataFrame
       guest_df = pd.DataFrame(st.session_state.guest_ratings)
 
-      # Combinar valoraciones reales con las del invitado
+      # Combinar valoraciones reales con las del invitado para entrenar el modelo
       combined_df = pd.concat([ratings, guest_df], ignore_index=True)
 
+      # Preparar el dataset para Surprise
       reader = Reader(rating_scale=(0.5, 5.0))
       data = Dataset.load_from_df(combined_df[['userId', 'movieId', 'rating']], reader)
       trainset = data.build_full_trainset()
 
-      # Entrenar con SVD++
+      # Entrenar con el modelo escogido
       recommender_model = SVDpp()
       with st.spinner("Entrenando modelo por favor espera un momento..."):
           recommender_model.fit(trainset)
 
+          # Pelicula no vostas
           def get_unseen_movies_guest():
               seen = guest_df['movieId'].tolist()
               all_movies = ratings['movieId'].unique()
               return [m for m in all_movies if m not in seen]
 
+          # Generar las recomendaciones para el invitado
           def recommend_guest(user_id, recommender_model, n=10):
               unseen = get_unseen_movies_guest()
               predictions = [recommender_model.predict(user_id, movie_id) for movie_id in unseen]
@@ -561,7 +565,7 @@ def guest():
       st.session_state.show_recommendations = False
 
 
-# Hay que asegurarse de que el estado de sesión está inicializado porque si no existe Streamlit lanza ese AttributeError
+# Hay que asegurarse de que el estado de sesión está inicializado porque si no existe Streamlit lanza un AttributeError
 if "login_state" not in st.session_state:
     st.session_state.login_state = "not_logged_in"
 if "show_recommendations" not in st.session_state:

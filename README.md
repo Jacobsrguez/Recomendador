@@ -2,6 +2,7 @@
 
 **Autor:** Jacob Santana Rodríguez  
 **Correo:** alu0101330426@ull.edu.es  
+**Tutora:** María Elena Sánchez Nielsen
 **Fecha:** 1 de abril de 2025  
 
 ---

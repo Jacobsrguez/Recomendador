@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import random
-from surprise import Dataset, Reader, KNNBasic, SVD, BaselineOnly, SVDpp, NMF, KNNWithMeans, KNNWithZScore, KNNBaseline, NormalPredictor, SlopeOne, CoClustering
+from surprise import Dataset, Reader, KNNBasic, SVD, BaselineOnly, SVDpp, NMF, KNNWithMeans, KNNWithZScore, KNNBaseline, SlopeOne, CoClustering
 from surprise.model_selection import train_test_split
 from surprise import accuracy
 from urllib.parse import parse_qs
@@ -201,7 +201,7 @@ def admin_login():
       "Item-Item (Cosine)", "User-User (Cosine)",
       "SVD", "SVD++", "NMF",
       "KNNBasic", "KNNWithMeans", "KNNWithZScore", "KNNBaseline",
-      "BaselineOnly", "NormalPredictor", "SlopeOne", "CoClustering"
+      "BaselineOnly", "SlopeOne", "CoClustering"
     ]
     results = []
     for name in model_names:
@@ -271,7 +271,7 @@ def admin_login():
     "Item-Item (Cosine)", "User-User (Cosine)",
     "SVD", "SVD++", "NMF",
     "KNNBasic", "KNNWithMeans", "KNNWithZScore", "KNNBaseline",
-    "BaselineOnly", "NormalPredictor", "SlopeOne", "CoClustering"
+    "BaselineOnly", "SlopeOne", "CoClustering"
   ]
 
   selected_model = st.selectbox("Selecciona el algoritmo para recomendar", model_options)

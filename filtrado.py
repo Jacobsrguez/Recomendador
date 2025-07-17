@@ -535,7 +535,7 @@ def guest():
       trainset = data.build_full_trainset()
 
       # Entrenar con el modelo escogido
-      recommender_model = SVDpp()
+      recommender_model = get_model("SVD++")
       with st.spinner("Entrenando modelo por favor espera un momento..."):
         recommender_model.fit(trainset)
 
